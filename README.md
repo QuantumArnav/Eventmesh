@@ -2,43 +2,46 @@
 
 **One intelligent event layer for the entire campus.**
 
-EventMesh turns fragmented campus event information into an intelligent, searchable, and conflict-aware event network. It is a hackathon MVP for the **Smart Campus Solutions for IITH** theme.
+EventMesh turns fragmented campus announcements into a searchable, explainable, conflict-aware event network. Built for the Lambda Hackathon theme **Smart Campus Solutions for IITH**.
 
-> **Demo data:** The included events, organizers, venues, attendance estimates, popularity values, and profile are illustrative seed data. They do **not** represent the official IIT Hyderabad calendar, venue booking system, or live campus statistics. Events created in your local copy remain in your local SQLite database.
+> **Demo data:** All seeded events, venues, organizer names, popularity values, and attendance estimates are illustrative. They are not the official IIT Hyderabad calendar, venue booking system, or live campus statistics. User-created events live only in the local SQLite database.
 
-## The problem
+## Why EventMesh is different
 
-Campus events are announced across posters, chats, club pages, email, and word of mouth. Students struggle to discover what is relevant, while organizers may unknowingly choose the same venue or compete for the same audience at the same time.
+| Traditional event listing | EventMesh campus intelligence |
+| --- | --- |
+| Create → list → register | Ingest → understand → detect → optimize → recommend → coordinate |
+| Students search scattered announcements | Students see personalized discovery and an optimized day plan |
+| Organizers guess whether a slot is good | Organizers inspect venue, audience, duplicate, and event-pressure signals |
+| Scores appear as opaque badges | Every signal has a short explanation and deterministic formula |
 
-## The solution and USP
+The product connects three daily campus problems: discovering relevant events, turning messy announcements into structured listings, and choosing times that work for the community.
 
-EventMesh provides one flow from event creation to student discovery:
+## Working features
 
-1. An organizer enters event details or uploads a poster for optional AI-assisted extraction.
-2. The organizer reviews and edits every field. Extraction never publishes automatically.
-3. Conflict Intelligence checks venue collisions and audience overlap against existing events, explains each score, and proposes lower-conflict slots.
-4. The organizer confirms and publishes.
-5. Students discover relevant events, see why they were recommended, save them, and inspect schedule clashes.
+### Student experience
 
-**USP:** EventMesh helps the campus coordinate events, rather than merely listing them.
+- Search by title, organizer, category, tag, or venue; filter by date and category.
+- Explainable 0–100 recommendations using demo interests, category preferences, time, popularity, and organizer affinity.
+- Event details, related events, registration deadlines, and saved-event clash warnings.
+- Interested, Saved, and Must Attend priorities persisted in SQLite.
+- **Build My Plan:** weighted interval scheduling selects the highest-utility set of non-overlapping events and explains skipped events.
+- Export one event or the current schedule/optimized plan as a local `.ics` calendar file.
 
-## What works in this MVP
+### Organizer experience
 
-- Search across event title, organizer, category, tags, and venue.
-- Filter by Today, Tomorrow, This Week, and event category.
-- Detailed event pages with related events and saved-event clash warnings.
-- Transparent weighted recommendations for the demo student.
-- Working save/remove action and My Schedule timeline with overlap warnings.
-- Manual event creation with Zod validation.
-- PNG/JPEG/WebP poster upload and optional OpenAI vision extraction, always followed by an editable confirmation form.
-- Safe manual fallback when no API key is present or extraction fails.
-- Venue and audience conflict scoring, with reasons and ranked alternative slots.
-- Organizer dashboard based on the current local database.
-- A dynamically generated sample poster and demo form example to make the flow easy to try.
+- Create an event manually, upload a poster for optional AI vision extraction, or paste a text announcement.
+- If no API key is configured, pasted text uses a **clearly labeled deterministic local parser**; poster extraction falls back to manual entry. Extracted fields are always editable and never auto-published.
+- Zod validation, a transparent Event Readiness score, and duplicate suggestions before publishing.
+- Conflict Intelligence distinguishes venue collisions from audience overlap, shows reasons, and offers lower-conflict alternatives.
+- Scheduling Intelligence compares candidate dates, time windows, durations, audience tags, and venues using the same conflict engine.
+- A clickable weekly Event Pressure heatmap blends simultaneous events, shared interests, category concentration, estimated audience, and occupied venues.
+- Organizer dashboard computes event counts, high-conflict events, quieter hours, readiness, category mix, audience pairs, and pressure from current local data.
+- Interactive Event Mesh graph connects events, organizers, interests, and shared audiences.
 
-## Quick start
+## Run locally
 
-**Requirements:** Node.js 24 (or a supported current Node.js release) and npm. No external database service is needed.
+**Requirements:** Node.js 24 or another Node.js release supported by Next.js 16, npm. No hosted database is required.
 
 ```bash
 git clone https://github.com/QuantumArnav/Eventmesh.git eventmesh-iith
@@ -46,121 +49,137 @@ cd eventmesh-iith
 npm install
 ```
 
-Create the local environment file:
+Create `.env` from `.env.example`:
 
-```bash
-# macOS / Linux
-cp .env.example .env
-
+```powershell
 # Windows PowerShell
 Copy-Item .env.example .env
 ```
 
-Then run:
+```bash
+# macOS / Linux
+cp .env.example .env
+```
+
+Start the local database and app:
 
 ```bash
 npm run db:setup
 npm run dev
 ```
 
-Open **http://localhost:3000**. `db:setup` creates the SQLite file, applies the committed migration, and inserts 18 demo events. Running it again preserves existing events and saved data. If port 3000 is already occupied, use the port printed by Next.js.
+Open **http://localhost:3000**. `db:setup` creates SQLite, applies the committed migrations, and inserts 18 labeled demo events, a demo student profile, and a six-event plan. It is safe to rerun: existing events and choices remain. If port 3000 is busy, use the URL printed by Next.js.
 
-### Optional poster extraction
+### Environment variables
 
-Add your own `OPENAI_API_KEY` to `.env`, then restart `npm run dev`. `OPENAI_VISION_MODEL` defaults to `gpt-4.1-mini` and can be changed to a compatible vision model. The key stays server-side; it is never exposed as a `NEXT_PUBLIC_` variable. Without a key, upload returns a clear fallback message and the manual form remains fully usable.
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Local SQLite path; default `file:./dev.db` |
+| `OPENAI_API_KEY` | Optional key for poster vision and AI text extraction |
+| `OPENAI_VISION_MODEL` | Optional compatible vision model; default `gpt-4.1-mini` |
 
-The demo role switch is the sidebar/navigation: **Discover** and **My Schedule** are the student view; **Organizer** and **Create event** are the organizer view. There are no credentials or production authentication in this MVP.
+The key stays on the server and is not exposed as `NEXT_PUBLIC_`. With no key, the entire demo remains usable. Local text parsing handles simple announcements and is identified as a local parser in the interface. AI extraction requires a valid key and available quota; it has not been live-tested without a key.
 
-## Two-minute judge demo
+There are no demo credentials. **Discover / My Schedule** are the student view; **Organizer / Create event / Scheduling / Event Mesh** are organizer intelligence views. Production authentication and official campus integrations are outside this hackathon MVP.
 
-1. Open **Discover**. Search `AI` and show a relevance score plus its plain-language reason.
-2. Save two overlapping events. Open **My Schedule** to show the timeline warning.
-3. Open **Organizer → Create event**. Choose **Load demo example** to populate a proposed event at LH3, or **Upload poster → Use sample poster** to try vision extraction when an API key is available.
-4. Click **Check conflicts**. Show the LH3 venue collision, the separate Programming Club audience overlap, and their explanations.
-5. Select a lower-conflict slot. The same conflict engine recalculates the score.
-6. Publish. Open the published event in the student view.
+## Three-minute judge walkthrough
 
-The seeded calendar intentionally contains overlapping events so these steps work on a fresh setup. The sample poster is generated for two days after the day it is opened; the seed events are generated for the same relative dates when the database is first set up.
+1. **Discover:** search for `AI` and open a card. Show its relevance score and plain-language reason.
+2. **My Schedule:** the fresh demo database already contains six tracked events. Select **Build my plan**; the optimizer keeps compatible events and explains why it skips a clash. Change an event to **Must Attend** and recalculate instantly.
+3. **Organizer → Create event → Paste announcement:** click **Use demo announcement**, then **Extract details**. With no API key, the interface explicitly says **Local text parser**. All fields remain editable.
+4. **Check conflicts:** the seeded scenario produces a **high-similarity possible duplicate**, a **100/100 LH3 venue collision**, and a separate programming-audience overlap. Open the existing listing or continue reviewing.
+5. **Scheduling:** compare ranked alternative slots. Click the **third demo day at 6 PM** on the heatmap to see contributing events, audience estimate, tags, and pressure explanation. Show the lower-conflict 8 PM option.
+6. **Event Mesh:** click the AI workshop, Programming interest, and connected events to show how organizers and audiences relate. If time permits, return to the create form, apply a better slot, and publish.
+
+All of these results are calculated from the local demo data, not hardcoded into the screens. On a fresh setup, dates are generated relative to the setup day so the scenario remains usable.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Poster[Poster image] --> Extract[Optional OpenAI vision extraction]
-  Manual[Manual entry] --> Review[Editable organizer form]
-  Extract --> Validate[Zod schema validation]
-  Validate --> Review
-  Review --> Conflict[Conflict engine]
-  Conflict --> Slots[Alternative slot search]
-  Slots --> Confirm[Organizer confirmation]
-  Confirm --> DB[(Prisma + SQLite)]
-  DB --> Discovery[Personalized discovery]
-  DB --> Schedule[Saved-event timeline]
-  DB --> Dashboard[Organizer dashboard]
+  Poster[Poster image] --> Extract[Unified validated extractor]
+  Text[Pasted announcement] --> Extract
+  Manual[Manual entry] --> Review[Editable confirmation form]
+  Extract --> Review
+  Review --> Ready[Event Readiness]
+  Review --> Duplicate[Duplicate Detector]
+  Review --> Conflict[Conflict Engine]
+  Conflict --> Scheduling[Slot Ranking]
+  Duplicate --> Publish[Organizer confirms publication]
+  Scheduling --> Publish
+  Publish --> DB[(Prisma + local SQLite)]
+  DB --> Discovery[Personalized Discovery]
+  DB --> Planner[Weighted Day Planner]
+  DB --> Heatmap[Event Pressure Heatmap]
+  DB --> Graph[Interactive Event Mesh]
+  DB --> Dashboard[Organizer Analytics]
 ```
 
-This is one Next.js application. The database stores events, a demo student profile, and saved-event links. API routes own server-side writes and extraction. Pure TypeScript modules hold the recommendation and conflict algorithms so they can be tested independently of the UI.
+This is one Next.js application. API routes own writes and provider calls. Pure TypeScript modules hold the algorithms and are tested independently from the UI. The only schema extension beyond the first MVP is a `preference` field on saved events; its additive migration preserves existing rows with `SAVED` as the default.
 
-### Conflict Intelligence
+## The intelligence, explained
 
-The engine first computes actual time overlap. Events on different dates or with only touching boundaries do not conflict. If overlapping events share a venue, the score starts at a severe baseline; otherwise the score reflects overlap duration, tag similarity, category similarity, and a bounded audience-size factor. Results include a score, severity, conflict type, and human-readable reasons. Alternative slots are candidate times ranked using **the same engine**, with venue collisions avoided first. Scores are decision aids, not actual attendance forecasts or official room availability.
+These are deterministic decision aids, not predictions of actual attendance, official room availability, or a trained ML model.
 
-### Personalized Discovery
+| Engine | How it works |
+| --- | --- |
+| **Conflict** | First require real time overlap. Same-venue score starts at 55 and adds overlap, tag similarity, and category points. Different venues use overlap, tag Jaccard similarity, category, and bounded audience size. Results include kind, severity, and reasons. |
+| **Scheduling** | Enumerate 30-minute starts across the requested window, venues, and up to three days. Run the conflict engine for every candidate. Combined score is `0.7 × worst conflict + 0.3 × mean conflict + 15 if venue collides`. Rank available venues first, then lower score. |
+| **Duplicate** | Weighted similarity: title 32, organizer 18, date 22, start time 10, venue 10, tags 8. Title uses token Jaccard and normalized edit distance. Distant dates sharply reduce the score; a match needs at least 70/100 and a sufficiently similar title. Organizers may continue anyway. |
+| **Event Pressure** | Hourly score combines event count (up to 35), pairwise audience-tag similarity (up to 20), category concentration (15), estimated audience (15), and fraction of listed venues occupied (15). Empty hours score zero. Click a cell for contributing events and reasons. |
+| **Event Readiness** | Field completeness: title 10, date 15, valid time range 15, venue 15, useful description 10, category 10, tags 10, deadline 5, organizer 5, estimated audience 5. Missing optional details lower the score but never block publication. |
+| **Recommendation** | Interest match 45, category 20, suitable time 15, demo popularity 10, organizer affinity 10. The score is bounded to 0–100 and includes reasons. |
+| **Day Planner** | Weighted interval scheduling. Utility is recommendation score + 80 for Must Attend or + 20 for Saved, plus one point. Sort by end time, find the previous compatible event, use dynamic programming, and reconstruct the optimum. |
+| **Event Mesh** | A small graph of upcoming events, organizers, and prominent tags. Dotted audience links require at least 15% tag Jaccard overlap; clicking nodes reveals the actual connection. |
 
-The recommendation score is a transparent weighted rule, **not a trained ML model**:
+## Technical stack
 
-| Factor | Maximum points |
-| --- | ---: |
-| Interest/tag overlap | 45 |
-| Preferred category | 20 |
-| Time suitability | 15 |
-| Demo popularity | 10 |
-| Organizer affinity | 10 |
-
-Scores are bounded to 0–100 and accompanied by an explanation. The sample profile uses interests in AI, programming, football, and startups; there is no real student profiling or tracking.
-
-## Tech stack and structure
-
-- **Next.js 16 App Router**, React, strict TypeScript
-- **CSS/Tailwind 4**, Lucide icons
-- **Prisma 6 + local SQLite**
-- **Zod 4** validation
-- **OpenAI Responses API** with a vision model when configured
-- **Vitest** for algorithmic tests
+- Next.js 16 App Router, React 19, strict TypeScript
+- Tailwind CSS 4 / custom design system, Lucide icons
+- Prisma 6 + local SQLite with committed migrations and seed data
+- Zod 4 validation
+- OpenAI Responses API for optional vision/text extraction
+- Vitest for algorithmic tests
 
 ```text
 app/                Pages and API route handlers
 components/         Navigation and reusable event UI
-lib/                Dates, data access, validation, algorithms
-lib/ai/             Provider-facing poster extraction module
-prisma/             Schema, committed migration, seed data
+lib/                Pure engines, dates, validation, database access
+lib/ai/             Unified optional extraction provider
+prisma/             Schema, additive migrations, demo seed
 scripts/            Local SQLite setup helper
-tests/              Conflict and recommendation engine tests
+tests/              Engine and export tests
 ```
 
-## Development commands
+## Development checks
 
 ```bash
-npm run dev          # local development server
-npm run typecheck    # TypeScript validation
-npm run lint         # ESLint
-npm test             # algorithm tests
-npm run build        # optimized production build
-npm run db:migrate -- --name your_change  # create a new local migration
+npm run typecheck
+npm run lint
+npm test
+npm run build
 ```
 
-## Screenshots
+## Visual tour
 
-Screenshots can be added here before final presentation. The working app is the source of truth for this submission.
+Run the app and visit these screens for the actual interactive visuals:
 
-## Limits and future scope
+1. `/discover` — personalized event cards and search.
+2. `/my-schedule` — timeline, priority controls, and optimized plan.
+3. `/organizer/create` — announcement/poster intake, readiness, duplicate and conflict review.
+4. `/organizer/scheduling` — ranked slots and clickable seven-day heatmap.
+5. `/event-mesh` — interactive organizer-event-interest graph.
 
-This MVP does not ingest real WhatsApp, Instagram, email, or club announcements automatically. Poster extraction processes only images an organizer deliberately uploads. It does not reserve official venues. The student profile and role switch are local demo fixtures; a real deployment would need authentication, organizer verification, permissions, official venue integration, and consent-aware campus data access. These are future integrations, not features claimed as complete.
+Static screenshots are not checked in; the live application is the source of truth for the submission.
+
+## Limits and next steps
+
+The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided in the create form. It does not reserve official venues. Organizer and student roles use one clearly labeled local demo profile, not production authentication. A campus deployment would need identity/permissions, verified organizers, official venue feeds, and consent-aware data handling.
 
 ## Team
 
-Add team members and hostel block here before submitting the public repository.
+Team members and hostel block will be added before final submission.
 
 ## Open-source acknowledgements
 
-Built during the hackathon using the open-source frameworks and libraries listed in `package.json`: Next.js, React, Prisma, Zod, Tailwind CSS, Lucide, and Vitest. No pre-existing EventMesh application code or external UI template was used. The optional extraction path uses the OpenAI API via its SDK.
+Built during the hackathon using the open-source frameworks and libraries listed in `package.json`: Next.js, React, Prisma, Zod, Tailwind CSS, Lucide, and Vitest. No pre-existing EventMesh application code or external UI template was used. Optional extraction calls the OpenAI API through its SDK.

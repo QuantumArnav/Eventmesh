@@ -8,11 +8,13 @@ import { ArrowLeft, ArrowRight, CheckCircle2, FileImage, Radar, Sparkles, Upload
 import { useCampus } from "@/app/providers";
 import { addDays, formatDate, formatTime, todayInIsth } from "@/lib/dates";
 import type { Conflict, SlotSuggestion } from "@/lib/conflict-engine";
+import type { DuplicateMatch } from "@/lib/duplicate-detector";
+import { assessReadiness } from "@/lib/event-readiness";
 import { CATEGORIES, type Category, type EventInput } from "@/lib/types";
 import { eventInputSchema } from "@/lib/validation";
 
 type Draft = { title: string; organizer: string; description: string; date: string; startTime: string; endTime: string; venue: string; category: Category; tags: string; registrationDeadline: string; expectedAudience: string };
-type Analysis = { conflicts: Conflict[]; suggestions: SlotSuggestion[] };
+type Analysis = { conflicts: Conflict[]; suggestions: SlotSuggestion[]; duplicates: DuplicateMatch[] };
 
 const emptyDraft: Draft = { title: "", organizer: "", description: "", date: "", startTime: "18:00", endTime: "19:30", venue: "", category: "Workshop", tags: "", registrationDeadline: "", expectedAudience: "" };
 
@@ -52,8 +54,9 @@ function asInput(draft: Draft): EventInput {
 export default function CreateEvent() {
   const router = useRouter();
   const { refresh } = useCampus();
-  const [mode, setMode] = useState<"manual" | "poster">("manual");
+  const [mode, setMode] = useState<"manual" | "poster" | "announcement">("manual");
   const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [announcement, setAnnouncement] = useState("");
   const [poster, setPoster] = useState<File | null>(null);
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -66,10 +69,12 @@ export default function CreateEvent() {
   const [info, setInfo] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [publishedId, setPublishedId] = useState<string | null>(null);
+  const [dismissedDuplicates, setDismissedDuplicates] = useState(false);
+  const readiness = assessReadiness(asInput(draft));
 
   const change = (name: keyof Draft, value: string) => {
     setDraft((current) => ({ ...current, [name]: value }));
-    setAnalysis(null); setConfirmConflicts(false); setError(null);
+    setAnalysis(null); setConfirmConflicts(false); setDismissedDuplicates(false); setError(null);
     setFieldErrors((current) => ({ ...current, [name]: "" }));
   };
 
@@ -89,15 +94,32 @@ export default function CreateEvent() {
   const analyze = async (value = draft) => {
     const input = validate(value);
     if (!input) return;
-    setAnalyzing(true); setAnalysis(null); setConfirmConflicts(false);
+    setAnalyzing(true); setAnalysis(null); setConfirmConflicts(false); setDismissedDuplicates(false);
     try {
       const response = await fetch("/api/conflicts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Analysis failed");
       setAnalysis(body); setAnalysisKey(JSON.stringify(input));
-      setInfo(body.conflicts.length ? "Conflict analysis complete. Review the signals below before publishing." : "No overlapping events found in the demo calendar.");
+      setInfo(body.duplicates.length ? "Possible duplicate found. Review the existing event before deciding to continue." : body.conflicts.length ? "Conflict analysis complete. Review the signals below before publishing." : "No overlapping events found in the demo calendar.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not analyze conflicts"); }
     finally { setAnalyzing(false); }
+  };
+
+  const applyExtracted = (extracted: Record<string, unknown>, method: string) => {
+    setDraft((current) => ({ ...current,
+      title: typeof extracted.title === "string" ? extracted.title : current.title,
+      organizer: typeof extracted.organizer === "string" ? extracted.organizer : current.organizer,
+      description: typeof extracted.description === "string" ? extracted.description : current.description,
+      date: typeof extracted.date === "string" ? extracted.date : current.date,
+      startTime: typeof extracted.startTime === "string" ? extracted.startTime : current.startTime,
+      endTime: typeof extracted.endTime === "string" ? extracted.endTime : "",
+      venue: typeof extracted.venue === "string" ? extracted.venue : current.venue,
+      registrationDeadline: typeof extracted.registrationDeadline === "string" ? extracted.registrationDeadline : current.registrationDeadline,
+      category: CATEGORIES.includes(extracted.category as Category) ? extracted.category as Category : current.category,
+      tags: Array.isArray(extracted.tags) && extracted.tags.length ? extracted.tags.join(", ") : current.tags,
+    }));
+    setInfo(`${method} created an editable draft. Check every field; nothing is published automatically.`);
+    setAnalysis(null); setDismissedDuplicates(false); setMode("manual");
   };
 
   const extract = async () => {
@@ -108,19 +130,19 @@ export default function CreateEvent() {
       const response = await fetch("/api/extract", { method: "POST", body: data });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Extraction failed");
-      const extracted = body.extracted;
-      setDraft((current) => ({ ...current,
-        title: extracted.title || current.title, organizer: extracted.organizer || current.organizer,
-        description: extracted.description || current.description, date: extracted.date || current.date,
-        startTime: extracted.startTime || current.startTime, endTime: extracted.endTime || current.endTime,
-        venue: extracted.venue || current.venue,
-        registrationDeadline: extracted.registrationDeadline || current.registrationDeadline,
-        category: CATEGORIES.includes(extracted.category as Category) ? extracted.category as Category : current.category,
-        tags: extracted.tags?.length ? extracted.tags.join(", ") : current.tags,
-      }));
-      setInfo("AI extracted a draft. Check every field below; nothing is published until you confirm.");
-      setAnalysis(null);
+      applyExtracted(body.extracted, body.method);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Automatic extraction unavailable. Enter details manually."); }
+    finally { setExtracting(false); }
+  };
+
+  const extractAnnouncement = async () => {
+    setExtracting(true); setError(null); setInfo(null);
+    try {
+      const response = await fetch("/api/extract", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: announcement }) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Could not read announcement");
+      applyExtracted(body.extracted, body.method);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not read announcement. Enter details manually."); }
     finally { setExtracting(false); }
   };
 
@@ -159,7 +181,8 @@ export default function CreateEvent() {
   if (publishedId) return <div className="page-wrap"><div className="panel publish-success"><CheckCircle2 size={40} /><h2>Your event is live in EventMesh.</h2><p>Students can discover and save it now. This is a local hackathon demo, not an official IITH announcement.</p><div><Link href={`/events/${publishedId}`} className="button button-primary">View published event <ArrowRight size={16} /></Link><Link href={`/organizer/events/${publishedId}/conflicts`} className="button button-secondary">View conflict intelligence</Link></div></div></div>;
 
   return <div className="page-wrap"><Link href="/organizer" className="back-link"><ArrowLeft size={15} /> Organizer dashboard</Link><div className="page-header"><div><div className="section-kicker"><Sparkles size={15} /> CREATE A CAMPUS EVENT</div><h1 className="page-title">Your event, connected.</h1><p className="page-subtitle">Create a listing, check the campus schedule, and publish only after reviewing conflicts.</p></div></div>
-    <div className="form-layout"><div className="panel form-panel"><div className="form-tabs" role="tablist" aria-label="Event creation method"><button role="tab" aria-selected={mode === "manual"} className={`form-tab ${mode === "manual" ? "active" : ""}`} onClick={() => setMode("manual")}>Enter details manually</button><button role="tab" aria-selected={mode === "poster"} className={`form-tab ${mode === "poster" ? "active" : ""}`} onClick={() => setMode("poster")}>Upload poster</button></div>
+    <div className="form-layout"><div className="panel form-panel"><div className="form-tabs" role="tablist" aria-label="Event creation method"><button role="tab" aria-selected={mode === "manual"} className={`form-tab ${mode === "manual" ? "active" : ""}`} onClick={() => setMode("manual")}>Enter details manually</button><button role="tab" aria-selected={mode === "poster"} className={`form-tab ${mode === "poster" ? "active" : ""}`} onClick={() => setMode("poster")}>Upload poster</button><button role="tab" aria-selected={mode === "announcement"} className={`form-tab ${mode === "announcement" ? "active" : ""}`} onClick={() => setMode("announcement")}>Paste announcement</button></div>
+      {mode === "announcement" && <div className="announcement-zone"><strong>Turn a scattered message into a structured event.</strong><p>Paste a club message or event announcement. With an API key, AI extracts details; otherwise a clearly labeled local parser handles common dates, times, venues and tags.</p><textarea aria-label="Event announcement" value={announcement} onChange={(event) => setAnnouncement(event.target.value)} placeholder="Hey everyone! Lambda is conducting an AI agents workshop tomorrow at 6 PM in LH3. Topics include LLMs, agents and RAG." /><div><button type="button" className="button button-secondary button-small" onClick={() => setAnnouncement(`Hey everyone! Lambda Club is hosting the Lambda AI Workshop on ${formatDate(addDays(todayInIsth(), 2), { weekday: undefined, month: "long", year: "numeric" })} from 6 PM to 7:30 PM in LH3. Learn practical AI and Programming with Machine Learning. See you there!`)}>Use demo announcement</button><button type="button" className="button button-primary button-small" disabled={extracting || announcement.trim().length < 15} onClick={() => void extractAnnouncement()}>{extracting ? "Reading…" : "Extract details"}</button></div></div>}
       {mode === "poster" && <div className="upload-zone"><UploadCloud size={29} /><strong>Upload an event poster</strong><p>PNG, JPEG or WebP · maximum 5 MB. Vision extraction requires an API key; manual entry always works.</p><input aria-label="Choose poster image" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setPoster(file); if (posterUrl) URL.revokeObjectURL(posterUrl); setPosterUrl(file ? URL.createObjectURL(file) : null); }} />{posterUrl && <Image className="poster-preview" src={posterUrl} alt="Selected event poster preview" width={420} height={240} unoptimized />}<div style={{ marginTop: 14, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}><button className="button button-secondary button-small" type="button" onClick={loadSamplePoster}>Use sample poster</button><button className="button button-primary button-small" type="button" disabled={extracting || !poster} onClick={() => void extract()}><FileImage size={15} />{extracting ? "Extracting details…" : "Extract event details"}</button></div></div>}
       <div className="panel-heading"><div><h2>Event details</h2><p className="form-intro">Review every field before publishing. All starred fields are required.</p></div><button type="button" className="button button-secondary button-small" onClick={() => { setDraft(demoDraft()); setAnalysis(null); setInfo("Demo example loaded into the form. This is sample input, not AI extraction."); setError(null); }}>Load demo example</button></div>
       {error && <div className="notice error" role="alert">{error}</div>}{info && <div className="notice" role="status" style={{ marginTop: error ? 8 : 0 }}>{info}</div>}
@@ -177,10 +200,10 @@ export default function CreateEvent() {
         <div className="field"><label htmlFor="expectedAudience">Expected audience</label><input id="expectedAudience" type="number" min="1" max="10000" value={draft.expectedAudience} onChange={(event) => change("expectedAudience", event.target.value)} placeholder="e.g. 100" />{fieldErrors.expectedAudience && <span className="field-error">{fieldErrors.expectedAudience}</span>}</div>
       </div>
       <div className="form-actions"><button type="button" className="button button-primary" disabled={analyzing} onClick={() => void analyze()}><Radar size={17} />{analyzing ? "Checking conflicts…" : "Check conflicts"}</button><button type="button" className="button button-secondary" disabled={publishing || !analysis} onClick={() => void publish()}>{publishing ? "Publishing…" : "Publish event"} <ArrowRight size={16} /></button></div>
-      {analysis && <section className="analysis-panel" aria-label="Conflict analysis results"><h3>Conflict intelligence</h3>{analysis.conflicts.length ? <div className="conflict-list">{analysis.conflicts.map((conflict) => <div className={`conflict-card ${conflict.kind === "VENUE" ? "venue" : ""}`} key={conflict.eventId}><div className="conflict-top"><span>{conflict.kind === "VENUE" ? "Venue conflict" : "Audience overlap"} · {conflict.severity}</span><strong>{conflict.score}/100</strong></div><h4>{conflict.eventTitle}</h4><p>{conflict.eventTime} · {conflict.eventVenue}</p><ul>{conflict.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>)}</div> : <div className="notice">Clear slot. No time overlap with events in this demo calendar.</div>}
-        <h3 style={{ marginTop: 22 }}>Lower-conflict alternatives</h3><div className="suggestion-list">{analysis.suggestions.map((slot) => <button type="button" className="slot-button" key={`${slot.date}-${slot.startTime}`} onClick={() => applySuggestion(slot)}><strong>{formatDate(slot.date)}</strong><strong>{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</strong><small>{slot.score}/100 score · {slot.venueCollision ? "venue busy" : "venue available"}</small><small>Use this slot ↗</small></button>)}</div>
+      {analysis && <section className="analysis-panel" aria-label="Conflict analysis results">{analysis.duplicates.length > 0 && !dismissedDuplicates && <div className="duplicate-panel"><h3>Possible duplicate detected</h3><p>These are similarity signals, not a publication block. Check the existing listing before continuing.</p>{analysis.duplicates.map((match) => <div className="duplicate-row" key={match.event.id}><div><strong>{match.event.title}</strong><small>{match.event.organizer} · {formatDate(match.event.date)} · {match.event.venue}</small><span>{match.reasons.join(" · ")}</span></div><strong>{match.score}%</strong><Link href={`/events/${match.event.id}`} target="_blank">View existing ↗</Link></div>)}<button type="button" className="button button-secondary button-small" onClick={() => setDismissedDuplicates(true)}>Continue anyway</button></div>}{dismissedDuplicates && <div className="notice" style={{ marginBottom: 18 }}>Duplicate warning reviewed. You can continue with conflict review and publishing.</div>}<h3>Conflict intelligence</h3>{analysis.conflicts.length ? <div className="conflict-list">{analysis.conflicts.map((conflict) => <div className={`conflict-card ${conflict.kind === "VENUE" ? "venue" : ""}`} key={conflict.eventId}><div className="conflict-top"><span>{conflict.kind === "VENUE" ? "Venue conflict" : "Audience overlap"} · {conflict.severity}</span><strong>{conflict.score}/100</strong></div><h4>{conflict.eventTitle}</h4><p>{conflict.eventTime} · {conflict.eventVenue}</p><ul>{conflict.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>)}</div> : <div className="notice">Clear slot. No time overlap with events in this demo calendar.</div>}
+        <div className="panel-heading" style={{ marginTop: 22 }}><h3>Lower-conflict alternatives</h3><Link href="/organizer/scheduling">Open Scheduling Intelligence →</Link></div><div className="suggestion-list">{analysis.suggestions.map((slot) => <button type="button" className="slot-button" key={`${slot.date}-${slot.startTime}`} onClick={() => applySuggestion(slot)}><strong>{formatDate(slot.date)}</strong><strong>{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</strong><small>{slot.score}/100 score · {slot.venueCollision ? "venue busy" : "venue available"}</small><small>Use this slot ↗</small></button>)}</div>
         {analysis.conflicts.some((conflict) => conflict.score >= 60) && <label className="workflow-note" style={{ display: "flex", gap: 9, alignItems: "flex-start" }}><input type="checkbox" checked={confirmConflicts} onChange={(event) => setConfirmConflicts(event.target.checked)} /> I reviewed the high-severity conflicts and still want to publish this event.</label>}
       </section>}
-    </div><aside className="panel side-note"><div className="section-kicker"><Sparkles size={15} /> HOW IT WORKS</div><h2>From idea to campus.</h2><p className="form-intro">A short, transparent workflow that keeps organizers in control.</p><div className="step-list"><div className="step-item"><span className="step-number">01</span><div><strong>Enter or extract details</strong><p>Upload a poster for AI-assisted extraction, or fill the form yourself.</p></div></div><div className="step-item"><span className="step-number">02</span><div><strong>Review every field</strong><p>AI suggestions never create an event automatically.</p></div></div><div className="step-item"><span className="step-number">03</span><div><strong>Check the campus</strong><p>See venue collisions, audience overlap and alternative slots.</p></div></div><div className="step-item"><span className="step-number">04</span><div><strong>Publish with confidence</strong><p>Your event appears in the discovery feed immediately.</p></div></div></div><div className="tip-box">Demo tip: use “Load demo example” to show both a venue collision at LH3 and audience overlap with the Programming Club contest.</div></aside></div>
+    </div><aside className="panel side-note"><div className="readiness-card"><div className="section-kicker"><Sparkles size={15} /> EVENT READINESS</div><div className="readiness-score">{readiness.score}<small>/100</small></div><div className="readiness-track"><span style={{ width: `${readiness.score}%` }} /></div><p>A transparent completeness score. It never blocks publishing.</p><ul>{readiness.items.map((item) => <li key={item.label} className={item.earned ? "ready" : "missing"}><span>{item.earned ? "✓" : "!"}</span><div><strong>{item.label}</strong>{!item.earned && <small>{item.advice}</small>}</div><em>+{item.points}</em></li>)}</ul></div><div className="section-kicker"><Sparkles size={15} /> HOW IT WORKS</div><h2>From idea to campus.</h2><p className="form-intro">A short, transparent workflow that keeps organizers in control.</p><div className="step-list"><div className="step-item"><span className="step-number">01</span><div><strong>Enter or extract details</strong><p>Upload a poster, paste an announcement, or fill the form yourself.</p></div></div><div className="step-item"><span className="step-number">02</span><div><strong>Review every field</strong><p>Extraction never creates an event automatically.</p></div></div><div className="step-item"><span className="step-number">03</span><div><strong>Check the campus</strong><p>Review duplicates, venue collisions, audience overlap and better slots.</p></div></div><div className="step-item"><span className="step-number">04</span><div><strong>Publish with confidence</strong><p>Your event appears in the discovery feed immediately.</p></div></div></div><div className="tip-box">Demo tip: use “Load demo example” to show both a venue collision at LH3 and audience overlap with the Programming Club contest.</div></aside></div>
   </div>;
 }

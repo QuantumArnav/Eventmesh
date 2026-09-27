@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, CalendarDays, Compass, LayoutDashboard, Plus, Sparkles } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Compass, LayoutDashboard, Network, Plus, Radar, Sparkles } from "lucide-react";
 
 const links = [
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/my-schedule", label: "My Schedule", icon: CalendarDays },
   { href: "/organizer", label: "Organizer", icon: LayoutDashboard },
+  { href: "/organizer/scheduling", label: "Scheduling", icon: Radar },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="sidebar-label organizer-label">FOR ORGANIZERS</div>
       <Link href="/organizer/create" className={`nav-link ${pathname === "/organizer/create" ? "active" : ""}`}><Plus size={18} />Create event</Link>
+      <Link href="/event-mesh" className={`nav-link ${pathname === "/event-mesh" ? "active" : ""}`}><Network size={18} />Event Mesh</Link>
       <div className="sidebar-spacer" />
       <div className="sidebar-foot">
         <div className="live-indicator"><span /> DEMO ENVIRONMENT</div>

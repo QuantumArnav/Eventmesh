@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Bookmark, CalendarDays, Clock3, MapPin, Tag, Users, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Bookmark, CalendarDays, Clock3, Download, MapPin, Tag, Users, AlertTriangle } from "lucide-react";
 import { useCampus } from "@/app/providers";
 import { LoadingState, EmptyState } from "@/components/loading";
 import { formatDate, formatTime } from "@/lib/dates";
 import { overlapMinutes } from "@/lib/conflict-engine";
 import { recommend } from "@/lib/recommendation-engine";
+import { downloadIcs } from "@/lib/ics";
 
 export default function EventDetail() {
   const params = useParams<{ id: string }>();
@@ -19,7 +20,7 @@ export default function EventDetail() {
   const clashes = events.filter((item) => item.id !== event.id && savedEventIds.includes(item.id) && overlapMinutes(event, item) > 0);
   const related = events.filter((item) => item.id !== event.id && (item.category === event.category || item.tags.some((tag) => event.tags.includes(tag)))).slice(0, 4);
   const recommendation = student ? recommend(event, student) : null;
-  return <div className="page-wrap"><Link href="/discover" className="back-link"><ArrowLeft size={15} /> Back to discover</Link><div className="detail-grid"><div><div className="detail-hero"><div className="section-kicker">{event.category.toUpperCase()} · {event.isDemo ? "DEMO EVENT" : "COMMUNITY EVENT"}</div><h1>{event.title}</h1><p>{event.description}</p><div className="detail-actions"><button type="button" className={`button ${saved ? "button-secondary" : "button-primary"}`} onClick={() => void toggleSaved(event.id)}><Bookmark size={16} fill={saved ? "currentColor" : "none"} />{saved ? "Saved to schedule" : "Save to my schedule"}</button><Link href="/my-schedule" className="button button-secondary">See my schedule</Link></div></div>
+  return <div className="page-wrap"><Link href="/discover" className="back-link"><ArrowLeft size={15} /> Back to discover</Link><div className="detail-grid"><div><div className="detail-hero"><div className="section-kicker">{event.category.toUpperCase()} · {event.isDemo ? "DEMO EVENT" : "COMMUNITY EVENT"}</div><h1>{event.title}</h1><p>{event.description}</p><div className="detail-actions"><button type="button" className={`button ${saved ? "button-secondary" : "button-primary"}`} onClick={() => void toggleSaved(event.id)}><Bookmark size={16} fill={saved ? "currentColor" : "none"} />{saved ? "Saved to schedule" : "Save to my schedule"}</button><button type="button" className="button button-secondary" onClick={() => downloadIcs([event], `eventmesh-${event.id}.ics`)}><Download size={15} /> Add to calendar</button><Link href="/my-schedule" className="button button-secondary">See my schedule</Link></div></div>
     {clashes.length > 0 && <div className="notice amber" style={{ marginTop: 18 }} role="alert"><AlertTriangle size={16} style={{ display: "inline", verticalAlign: "middle", marginRight: 7 }} /> This event overlaps with your saved {clashes.map((item) => item.title).join(", ")}.</div>}
     <section className="detail-section"><h2>About this event</h2><p>{event.description}</p><div className="event-tags">{event.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></section>
     <section className="detail-section"><h2>Why it’s on your radar</h2><p>{recommendation ? `${recommendation.score}% relevance. ${recommendation.reasons.join(" · ")}. The score combines shared interests, category preference, time, demo popularity, and organizer affinity.` : "Sign in with a profile to see recommendations."}</p></section>

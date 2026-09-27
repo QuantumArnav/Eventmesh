@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import type { EventData, EventInput, StudentData, Category } from "./types";
+import type { Preference } from "./schedule-optimizer";
 
 type DatabaseEvent = Awaited<ReturnType<typeof prisma.event.findFirst>>;
 
@@ -42,4 +43,9 @@ export async function getStudent(): Promise<StudentData> {
 export async function getSavedEventIds(): Promise<string[]> {
   const rows = await prisma.savedEvent.findMany({ where: { studentId: "demo-student" } });
   return rows.map((row) => row.eventId);
+}
+
+export async function getEventPreferences(): Promise<Record<string, Preference>> {
+  const rows = await prisma.savedEvent.findMany({ where: { studentId: "demo-student" }, select: { eventId: true, preference: true } });
+  return Object.fromEntries(rows.map((row) => [row.eventId, row.preference as Preference]));
 }

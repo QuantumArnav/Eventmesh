@@ -42,6 +42,7 @@ model StudentProfile {
 model SavedEvent {
   studentId String
   eventId   String
+  preference String @default("SAVED")
   savedAt   DateTime @default(now())
   student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)

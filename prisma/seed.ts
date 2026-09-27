@@ -33,15 +33,25 @@ async function main() {
     categoryPreferencesJson: JSON.stringify(["Technical", "Workshop", "Sports"]), organizerAffinityJson: JSON.stringify(["Lambda Club", "Programming Club"]),
   } });
   if (await prisma.event.count()) { console.log("Events already present; seed skipped to preserve data."); return; }
+  const seededIds = new Map<string, string>();
   for (const event of events) {
-    await prisma.event.create({ data: {
+    const created = await prisma.event.create({ data: {
       title: event.title, organizer: event.organizer, description: event.description,
       date: addDays(today, event.day), startTime: event.start, endTime: event.end, venue: event.venue,
       category: event.category, tagsJson: JSON.stringify(event.tags), registrationDeadline: event.deadline === undefined ? null : addDays(today, event.deadline),
       expectedAudience: event.audience, popularity: event.popularity, isDemo: true,
     } });
+    seededIds.set(event.title, created.id);
   }
-  console.log(`Seeded ${events.length} clearly labeled demo events starting ${today}.`);
+  for (const [title, preference] of [
+    ["Milan Football Practice", "SAVED"], ["Open Source Contribution Sprint", "SAVED"],
+    ["Astronomy Observation Night", "SAVED"], ["Startup Pitch Night", "INTERESTED"],
+    ["Lambda AI Workshop", "MUST_ATTEND"], ["Competitive Programming Contest", "INTERESTED"],
+  ]) {
+    const eventId = seededIds.get(title);
+    if (eventId) await prisma.savedEvent.create({ data: { studentId: "demo-student", eventId, preference } });
+  }
+  console.log(`Seeded ${events.length} clearly labeled demo events and a six-event student plan starting ${today}.`);
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

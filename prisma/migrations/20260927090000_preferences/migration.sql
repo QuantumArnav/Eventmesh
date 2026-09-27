@@ -1,0 +1,1 @@
+ALTER TABLE "SavedEvent" ADD COLUMN "preference" TEXT NOT NULL DEFAULT 'SAVED';
