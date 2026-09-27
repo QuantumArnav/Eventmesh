@@ -34,12 +34,13 @@ export function extractTextLocally(input: string): ExtractionResult["extracted"]
   const organizer = text.match(/\b(Lambda Club|Lambda|Programming Club|Robotics Club|Sports Council|[A-Z][A-Za-z]+ Club)\b/i)?.[1] ?? null;
   const venue = text.match(/\b(LH\s?\d+|Academic Block|Convention Centre|Sports Complex|Hostel Common Room|Amphitheatre)\b/i)?.[1]?.replace(/LH\s+(\d+)/i, "LH$1") ?? null;
   const timeMatches = [...text.matchAll(/\b(\d{1,2})(?::([0-5]\d))?\s*(AM|PM)\b/gi)];
+  const deadlineText = text.match(/\b(?:registration\s+(?:deadline|closes)|register\s+by)\b\s*(?:is|on|by|:)?\s*([^.!?\n]+)/i)?.[1];
   const tags = ["AI", "Programming", "Machine Learning", "LLMs", "Agents", "RAG", "Football", "Startups", "Robotics", "Astronomy", "Design", "Music"].filter((tag) => text.toLowerCase().includes(tag.toLowerCase()));
   const category = /workshop/i.test(text) ? "Workshop" : /contest|hackathon|coding|agents|programming/i.test(text) ? "Technical" : /football|sport/i.test(text) ? "Sports" : /talk|seminar/i.test(text) ? "Talk" : null;
   const firstTime = timeMatches[0];
   const secondTime = timeMatches[1];
   const betweenTimes = firstTime && secondTime ? text.slice((firstTime.index ?? 0) + firstTime[0].length, secondTime.index).trim() : "";
-  return extractedEventSchema.parse({ title, organizer, description: text || null, date: dateFromWords(text), startTime: firstTime ? toTime(firstTime[1], firstTime[2], firstTime[3]) : null, endTime: secondTime && /^(to|until|[-–])$/i.test(betweenTimes) ? toTime(secondTime[1], secondTime[2], secondTime[3]) : null, venue, registrationDeadline: null, category, tags });
+  return extractedEventSchema.parse({ title, organizer, description: text || null, date: dateFromWords(text), startTime: firstTime ? toTime(firstTime[1], firstTime[2], firstTime[3]) : null, endTime: secondTime && /^(to|until|[-–])$/i.test(betweenTimes) ? toTime(secondTime[1], secondTime[2], secondTime[3]) : null, venue, registrationDeadline: deadlineText ? dateFromWords(deadlineText) : null, category, tags });
 }
 
 export async function extractEvent(source: ExtractionSource): Promise<ExtractionResult> {

@@ -54,7 +54,7 @@ These are intended benefits. The demo uses synthetic records, so it does not cla
 ### Organizer experience
 
 - Create an event manually, upload a poster for optional AI vision extraction, or paste a text announcement.
-- If no API key is configured, pasted text uses a **clearly labeled deterministic local parser**; poster extraction falls back to manual entry. Extracted fields are always editable and never auto-published.
+- If no API key is configured, pasted text uses a **clearly labeled deterministic local parser** for common titles, dates, times, venues, tags, and explicit registration dates; poster extraction falls back to manual entry. Extracted fields are always editable and never auto-published.
 - Zod validation, a transparent Event Readiness score, and duplicate suggestions before publishing.
 - Conflict Intelligence distinguishes venue collisions from audience overlap, shows reasons, and offers lower-conflict alternatives.
 - Scheduling Intelligence compares candidate dates, time windows, durations, audience tags, and venues using the same conflict engine.

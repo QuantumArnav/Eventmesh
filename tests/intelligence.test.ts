@@ -97,9 +97,10 @@ describe("text ingestion fallback", () => {
     expect(extracted.venue).toBe("LH3");
   });
   it("reads an explicit end time and preserves a clean demo title", () => {
-    const extracted = extractTextLocally("Lambda Club is hosting the Lambda AI Workshop on 29 September 2026 from 6 PM to 7:30 PM in LH3. Learn AI and Programming.");
+    const extracted = extractTextLocally("Lambda Club is hosting the Lambda AI Workshop on 29 September 2026 from 6 PM to 7:30 PM in LH3. Learn AI and Programming. Registration closes on 28 September 2026.");
     expect(extracted.title).toBe("Lambda AI Workshop");
     expect(extracted.organizer).toBe("Lambda Club");
     expect(extracted.endTime).toBe("19:30");
+    expect(extracted.registrationDeadline).toBe("2026-09-28");
   });
 });
