@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id                   String   @id @default(cuid())
+  title                String
+  organizer            String
+  description          String
+  date                 String
+  startTime            String
+  endTime              String
+  venue                String
+  category             String
+  tagsJson             String
+  registrationDeadline String?
+  expectedAudience     Int?
+  popularity           Int      @default(0)
+  isDemo               Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  savedBy              SavedEvent[]
+
+  @@index([date, startTime])
+  @@index([category])
+}
+
+model StudentProfile {
+  id                    String       @id
+  name                  String
+  interestsJson         String
+  categoryPreferencesJson String
+  organizerAffinityJson String
+  saved                 SavedEvent[]
+}
+
+model SavedEvent {
+  studentId String
+  eventId   String
+  savedAt   DateTime @default(now())
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, eventId])
+}

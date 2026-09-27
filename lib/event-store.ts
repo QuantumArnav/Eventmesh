@@ -1,0 +1,45 @@
+import { prisma } from "./db";
+import type { EventData, EventInput, StudentData, Category } from "./types";
+
+type DatabaseEvent = Awaited<ReturnType<typeof prisma.event.findFirst>>;
+
+export function toEvent(row: NonNullable<DatabaseEvent>): EventData {
+  return {
+    id: row.id, title: row.title, organizer: row.organizer, description: row.description,
+    date: row.date, startTime: row.startTime, endTime: row.endTime, venue: row.venue,
+    category: row.category as Category, tags: JSON.parse(row.tagsJson) as string[],
+    registrationDeadline: row.registrationDeadline, expectedAudience: row.expectedAudience,
+    popularity: row.popularity, isDemo: row.isDemo, createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export async function listEvents(): Promise<EventData[]> {
+  const rows = await prisma.event.findMany({ orderBy: [{ date: "asc" }, { startTime: "asc" }] });
+  return rows.map(toEvent);
+}
+
+export async function getEvent(id: string): Promise<EventData | null> {
+  const row = await prisma.event.findUnique({ where: { id } });
+  return row ? toEvent(row) : null;
+}
+
+export async function createEvent(input: EventInput): Promise<EventData> {
+  const row = await prisma.event.create({ data: {
+    title: input.title, organizer: input.organizer, description: input.description,
+    date: input.date, startTime: input.startTime, endTime: input.endTime,
+    venue: input.venue, category: input.category, tagsJson: JSON.stringify(input.tags),
+    registrationDeadline: input.registrationDeadline, expectedAudience: input.expectedAudience,
+  } });
+  return toEvent(row);
+}
+
+export async function getStudent(): Promise<StudentData> {
+  const student = await prisma.studentProfile.findUniqueOrThrow({ where: { id: "demo-student" } });
+  return { id: student.id, name: student.name, interests: JSON.parse(student.interestsJson),
+    categoryPreferences: JSON.parse(student.categoryPreferencesJson), organizerAffinity: JSON.parse(student.organizerAffinityJson) };
+}
+
+export async function getSavedEventIds(): Promise<string[]> {
+  const rows = await prisma.savedEvent.findMany({ where: { studentId: "demo-student" } });
+  return rows.map((row) => row.eventId);
+}
