@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "evaluate": "tsx evaluation/run.ts",
     "db:migrate": "node scripts/ensure-db.mjs && prisma migrate dev",
     "db:setup": "node scripts/ensure-db.mjs && prisma migrate deploy && npm run db:seed",
     "db:seed": "tsx prisma/seed.ts",

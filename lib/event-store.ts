@@ -1,6 +1,9 @@
 import { prisma } from "./db";
 import type { EventData, EventInput, StudentData, Category } from "./types";
 import type { Preference } from "./schedule-optimizer";
+import { createHash } from "node:crypto";
+
+export class SourceAlreadyPublishedError extends Error {}
 
 type DatabaseEvent = Awaited<ReturnType<typeof prisma.event.findFirst>>;
 
@@ -24,13 +27,27 @@ export async function getEvent(id: string): Promise<EventData | null> {
   return row ? toEvent(row) : null;
 }
 
-export async function createEvent(input: EventInput): Promise<EventData> {
-  const row = await prisma.event.create({ data: {
-    title: input.title, organizer: input.organizer, description: input.description,
-    date: input.date, startTime: input.startTime, endTime: input.endTime,
-    venue: input.venue, category: input.category, tagsJson: JSON.stringify(input.tags),
-    registrationDeadline: input.registrationDeadline, expectedAudience: input.expectedAudience,
-  } });
+export async function findExactEvent(input: EventInput): Promise<EventData | null> {
+  const row = await prisma.event.findFirst({ where: { title: input.title, organizer: input.organizer, date: input.date, startTime: input.startTime, endTime: input.endTime, venue: input.venue } });
+  return row ? toEvent(row) : null;
+}
+
+export async function createEvent(input: EventInput, sourceId?: string): Promise<EventData> {
+  const knownVenue = await prisma.venue.findFirst({ where: { name: { equals: input.venue } } });
+  const submissionKey = createHash("sha256").update(JSON.stringify([input.title, input.organizer, input.date, input.startTime, input.endTime, input.venue])).digest("hex");
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await tx.event.create({ data: {
+      title: input.title, organizer: input.organizer, description: input.description,
+      date: input.date, startTime: input.startTime, endTime: input.endTime,
+      venue: input.venue, venueId: knownVenue?.id, submissionKey, category: input.category, tagsJson: JSON.stringify(input.tags),
+      registrationDeadline: input.registrationDeadline, expectedAudience: input.expectedAudience,
+    } });
+    if (sourceId) {
+      const updated = await tx.eventSource.updateMany({ where: { id: sourceId, status: { not: "PUBLISHED" } }, data: { status: "PUBLISHED", publishedEventId: created.id } });
+      if (updated.count !== 1) throw new SourceAlreadyPublishedError("Source already published");
+    }
+    return created;
+  });
   return toEvent(row);
 }
 

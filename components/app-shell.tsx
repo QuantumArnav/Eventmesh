@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, CalendarDays, Compass, LayoutDashboard, Network, Plus, Radar, Sparkles } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Compass, Inbox, LayoutDashboard, Network, Plus, Radar, Sparkles } from "lucide-react";
 
 const links = [
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/my-schedule", label: "My Schedule", icon: CalendarDays },
   { href: "/organizer", label: "Organizer", icon: LayoutDashboard },
   { href: "/organizer/scheduling", label: "Scheduling", icon: Radar },
+  { href: "/demo", label: "Guided demo", icon: Sparkles },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="sidebar-label organizer-label">FOR ORGANIZERS</div>
       <Link href="/organizer/create" className={`nav-link ${pathname === "/organizer/create" ? "active" : ""}`}><Plus size={18} />Create event</Link>
+      <Link href="/organizer/inbox" className={`nav-link ${pathname === "/organizer/inbox" ? "active" : ""}`}><Inbox size={18} />Source inbox</Link>
       <Link href="/event-mesh" className={`nav-link ${pathname === "/event-mesh" ? "active" : ""}`}><Network size={18} />Event Mesh</Link>
       <div className="sidebar-spacer" />
       <div className="sidebar-foot">
@@ -37,6 +39,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
       <main>{children}</main>
     </div>
-    <nav className="mobile-nav" aria-label="Mobile navigation">{links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={pathname === href ? "active" : ""}><Icon size={19} /><span>{label}</span></Link>)}<Link href="/organizer/create"><Plus size={19} /><span>Create</span></Link></nav>
+    <nav className="mobile-nav" aria-label="Mobile navigation">{links.filter(({ href }) => href !== "/demo").map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={pathname === href ? "active" : ""}><Icon size={19} /><span>{label}</span></Link>)}<Link href="/organizer/create"><Plus size={19} /><span>Create</span></Link></nav>
   </div>;
 }

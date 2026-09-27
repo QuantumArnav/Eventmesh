@@ -5,7 +5,6 @@ import { measureEventPressure } from "../lib/event-pressure";
 import { findBestSlots } from "../lib/scheduling-engine";
 import { optimizeSchedule } from "../lib/schedule-optimizer";
 import { extractTextLocally } from "../lib/ai/event-extractor";
-import { addDays, todayInIsth } from "../lib/dates";
 import type { EventData, EventInput, StudentData } from "../lib/types";
 
 const base: EventInput = { title: "Lambda AI Workshop", organizer: "Lambda Club", description: "A practical session about building useful AI systems on campus.", date: "2026-09-29", startTime: "18:00", endTime: "19:30", venue: "LH3", category: "Workshop", tags: ["AI", "Programming"], registrationDeadline: "2026-09-28", expectedAudience: 100 };
@@ -91,7 +90,7 @@ describe("text ingestion fallback", () => {
   it("extracts the demo announcement without claiming AI or inventing an end time", () => {
     const extracted = extractTextLocally("Hey everyone! Lambda is conducting an AI agents workshop tomorrow at 6 PM in LH3. Topics include LLMs, agents and RAG. See you there!");
     expect(extracted.title).toBe("AI agents workshop");
-    expect(extracted.date).toBe(addDays(todayInIsth(), 1));
+    expect(extracted.date).toBeNull();
     expect(extracted.startTime).toBe("18:00");
     expect(extracted.endTime).toBeNull();
     expect(extracted.venue).toBe("LH3");

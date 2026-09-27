@@ -1,22 +1,51 @@
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
-import { addDays, todayInIsth } from "../dates";
 import { extractedEventSchema } from "../validation";
 
 export class ExtractionUnavailableError extends Error {}
 export type ExtractionSource = { sourceType: "image"; content: File } | { sourceType: "text"; content: string };
-export type ExtractionResult = { extracted: ReturnType<typeof extractedEventSchema.parse>; method: "AI vision" | "AI text" | "Local text parser" };
+export type ExtractionField = "title" | "organizer" | "date" | "startTime" | "endTime" | "venue" | "registrationDeadline";
+export type FieldAssessment = { confidence: number; label: "High confidence" | "Review suggested" | "Uncertain"; warning: string | null };
+export type ExtractionResult = { extracted: ReturnType<typeof extractedEventSchema.parse>; method: "AI vision" | "AI text" | "Local text parser"; fields: Record<ExtractionField, FieldAssessment> };
+
+export function confidenceLabel(score: number): FieldAssessment["label"] {
+  return score >= 0.85 ? "High confidence" : score >= 0.5 ? "Review suggested" : "Uncertain";
+}
+
+export function assessExtraction(extracted: ExtractionResult["extracted"], sourceText: string | null): Record<ExtractionField, FieldAssessment> {
+  const keys: ExtractionField[] = ["title", "organizer", "date", "startTime", "endTime", "venue", "registrationDeadline"];
+  const relativeDate = !!sourceText && /\b(today|tomorrow|tonight|next\s+\w+)\b/i.test(sourceText);
+  const fullDate = !!sourceText && /\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b/.test(sourceText);
+  const incompleteVenue = !!sourceText && /\b(?:at|in)\s+LH\b(?!\s*\d)/i.test(sourceText);
+  return Object.fromEntries(keys.map((key) => {
+    let value = extracted[key];
+    let warning: string | null = null;
+    if ((key === "date" || key === "registrationDeadline") && relativeDate && !fullDate) {
+      value = null; warning = "Relative date detected but the announcement date is unavailable.";
+    }
+    if (key === "venue" && incompleteVenue && !/\bLH\s*\d+\b/i.test(sourceText ?? "")) {
+      value = null; warning = "Venue appears incomplete.";
+    }
+    if (value === null) warning ??= "Not clearly stated in the source; please enter or verify it.";
+    // These are evidence tiers, not calibrated model probabilities.
+    const evidence = sourceText && typeof value === "string" && sourceText.toLowerCase().includes(value.toLowerCase());
+    const confidence = value === null ? 0.2 : evidence ? 0.9 : sourceText ? 0.65 : 0.65;
+    return [key, { confidence, label: confidenceLabel(confidence), warning }];
+  })) as Record<ExtractionField, FieldAssessment>;
+}
+
+function result(extracted: ExtractionResult["extracted"], method: ExtractionResult["method"], sourceText: string | null): ExtractionResult {
+  const fields = assessExtraction(extracted, sourceText);
+  for (const key of ["date", "registrationDeadline", "venue"] as const) if (fields[key].warning?.startsWith("Relative date") || fields[key].warning === "Venue appears incomplete.") extracted[key] = null;
+  return { extracted, method, fields };
+}
 
 function dateFromWords(input: string): string | null {
-  const today = todayInIsth();
-  if (/\btomorrow\b/i.test(input)) return addDays(today, 1);
-  if (/\btoday\b/i.test(input)) return today;
-  const match = input.match(/\b(\d{1,2})\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)(?:\s+(\d{4}))?\b/i);
+  const match = input.match(/\b(\d{1,2})\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})\b/i);
   if (!match) return null;
   const month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(match[2].slice(0, 3).toLowerCase()) + 1;
-  let year = match[3] ? Number(match[3]) : Number(today.slice(0, 4));
-  let date = `${year}-${String(month).padStart(2, "0")}-${match[1].padStart(2, "0")}`;
-  if (!match[3] && date < today) { year++; date = `${year}-${String(month).padStart(2, "0")}-${match[1].padStart(2, "0")}`; }
+  const year = Number(match[3]);
+  const date = `${year}-${String(month).padStart(2, "0")}-${match[1].padStart(2, "0")}`;
   return Number.isNaN(Date.parse(`${date}T00:00:00Z`)) ? null : date;
 }
 
@@ -44,7 +73,7 @@ export function extractTextLocally(input: string): ExtractionResult["extracted"]
 }
 
 export async function extractEvent(source: ExtractionSource): Promise<ExtractionResult> {
-  if (source.sourceType === "text" && !process.env.OPENAI_API_KEY) return { extracted: extractTextLocally(source.content), method: "Local text parser" };
+  if (source.sourceType === "text" && !process.env.OPENAI_API_KEY) return result(extractTextLocally(source.content), "Local text parser", source.content);
   if (!process.env.OPENAI_API_KEY) throw new ExtractionUnavailableError("Automatic extraction unavailable. Add an API key or enter event details manually.");
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 25000, maxRetries: 0 });
   const content = source.sourceType === "image" ? [
@@ -55,15 +84,15 @@ export async function extractEvent(source: ExtractionSource): Promise<Extraction
     const response = await client.responses.parse({
       model: process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini",
       input: [{ role: "user", content: [
-        { type: "input_text", text: `Return null for fields not explicitly given. Normalize dates as YYYY-MM-DD and times as 24-hour HH:MM. If the year is missing, infer the next upcoming occurrence relative to today, ${todayInIsth()}. Do not invent organizers, times, venues or deadlines. Choose a category from Technical, Cultural, Sports, Workshop, Talk, Community when clear.` },
+        { type: "input_text", text: "Return null for fields not explicitly given. Normalize fully specified dates as YYYY-MM-DD and times as 24-hour HH:MM. If a date is relative (such as tomorrow) and the source publication date is not explicit, return null. If the year is absent, return null. Incomplete venues such as LH must be null. Do not invent organizers, times, venues or deadlines. Choose a category from Technical, Cultural, Sports, Workshop, Talk, Community when clear." },
         ...content,
       ] }],
       text: { format: zodTextFormat(extractedEventSchema, "campus_event") },
     });
     if (!response.output_parsed) throw new Error("No structured result returned");
-    return { extracted: extractedEventSchema.parse(response.output_parsed), method: source.sourceType === "image" ? "AI vision" : "AI text" };
+    return result(extractedEventSchema.parse(response.output_parsed), source.sourceType === "image" ? "AI vision" : "AI text", source.sourceType === "text" ? source.content : null);
   } catch {
-    if (source.sourceType === "text") return { extracted: extractTextLocally(source.content), method: "Local text parser" };
+    if (source.sourceType === "text") return result(extractTextLocally(source.content), "Local text parser", source.content);
     throw new ExtractionUnavailableError("Automatic extraction unavailable. You can enter the event details manually.");
   }
 }

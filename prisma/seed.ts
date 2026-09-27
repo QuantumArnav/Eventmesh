@@ -11,6 +11,7 @@ const events: SeedEvent[] = [
   { title: "Astronomy Observation Night", organizer: "Astronomy Club", description: "Explore Saturn and the night sky through telescopes with fellow students.", day: 0, start: "20:00", end: "21:30", venue: "Academic Block Terrace", category: "Community", tags: ["Astronomy", "Science", "Stargazing"], audience: 70, popularity: 72 },
   { title: "Open Source Contribution Sprint", organizer: "Programming Club", description: "Make your first meaningful open-source contribution with guidance from club mentors.", day: 0, start: "18:30", end: "20:00", venue: "LH1", category: "Technical", tags: ["Programming", "Open Source", "GitHub"], audience: 90, popularity: 82 },
   { title: "Photography Walk", organizer: "Photography Club", description: "A golden-hour campus walk focused on composition and visual storytelling.", day: 1, start: "17:00", end: "18:30", venue: "Hostel Circle", category: "Cultural", tags: ["Photography", "Creative", "Campus"], audience: 45, popularity: 55 },
+  { title: "AI Study Circle", organizer: "Lambda Club", description: "A relaxed peer session to discuss AI projects, programming ideas, and practical experiments.", day: 1, start: "18:30", end: "19:30", venue: "LH1", category: "Technical", tags: ["AI", "Programming", "Projects"], audience: 45, popularity: 61 },
   { title: "Startup Pitch Night", organizer: "E-Cell IITH", description: "Present a two-minute startup pitch and receive practical feedback.", day: 1, start: "19:00", end: "21:00", venue: "Convention Centre", category: "Talk", tags: ["Startups", "Entrepreneurship", "Pitching"], audience: 150, popularity: 87 },
   { title: "Dance Workshop", organizer: "Vibes Dance Club", description: "Learn a short routine with a beginner-friendly group session.", day: 1, start: "18:00", end: "19:30", venue: "Hostel Common Room", category: "Workshop", tags: ["Dance", "Culture", "Movement"], audience: 65, popularity: 67 },
   { title: "Lambda AI Workshop", organizer: "Lambda Club", description: "Build a small practical AI system and learn how to evaluate it responsibly.", day: 2, start: "18:00", end: "19:30", venue: "LH3", category: "Workshop", tags: ["AI", "Programming", "Machine Learning"], audience: 120, popularity: 93, deadline: 1 },
@@ -27,17 +28,40 @@ const events: SeedEvent[] = [
   { title: "Campus Climate Action Forum", organizer: "Prakriti Club", description: "Discuss practical student-led sustainability projects for IITH.", day: 7, start: "18:00", end: "19:30", venue: "Convention Centre", category: "Community", tags: ["Sustainability", "Campus", "Climate"], audience: 70, popularity: 58 },
 ];
 
+// Invented capacities and facilities for the hackathon demo; never treat these as official IITH inventory.
+const demoVenues = [
+  { name: "LH1", building: "Lecture Hall Complex", area: "Academic zone", capacity: 160, type: "Lecture hall", hasProjector: true, hasAudioSystem: true, hasStage: false, indoor: true, accessible: true },
+  { name: "LH2", building: "Lecture Hall Complex", area: "Academic zone", capacity: 150, type: "Lecture hall", hasProjector: true, hasAudioSystem: true, hasStage: false, indoor: true, accessible: true },
+  { name: "LH3", building: "Lecture Hall Complex", area: "Academic zone", capacity: 120, type: "Lecture hall", hasProjector: true, hasAudioSystem: true, hasStage: false, indoor: true, accessible: true },
+  { name: "Convention Centre", building: "Convention Centre", area: "Central zone", capacity: 350, type: "Multipurpose auditorium", hasProjector: true, hasAudioSystem: true, hasStage: true, indoor: true, accessible: true },
+  { name: "Academic Block Seminar Hall", building: "Academic Block", area: "Academic zone", capacity: 75, type: "Seminar hall", hasProjector: true, hasAudioSystem: true, hasStage: false, indoor: true, accessible: true },
+  { name: "Sports Complex", building: "Sports Complex", area: "Sports zone", capacity: 200, type: "Sports facility", hasProjector: false, hasAudioSystem: true, hasStage: false, indoor: false, accessible: true },
+  { name: "Hostel Common Room", building: "Hostel area", area: "Residential zone", capacity: 85, type: "Common room", hasProjector: false, hasAudioSystem: true, hasStage: false, indoor: true, accessible: true },
+] as const;
+
 async function main() {
+  for (const venue of demoVenues) await prisma.venue.upsert({
+    where: { name: venue.name }, update: {}, create: { ...venue, description: "Illustrative venue profile for EventMesh demos; verify capacity, facilities and booking with campus staff.", isDemo: true },
+  });
+  const venueIds = new Map((await prisma.venue.findMany({ select: { id: true, name: true } })).map((venue) => [venue.name, venue.id]));
+  for (const venue of demoVenues) await prisma.event.updateMany({ where: { venue: venue.name, venueId: null }, data: { venueId: venueIds.get(venue.name) } });
   await prisma.studentProfile.upsert({ where: { id: "demo-student" }, update: {}, create: {
     id: "demo-student", name: "Arnav", interestsJson: JSON.stringify(["AI", "Machine Learning", "Programming", "Football", "Startups"]),
     categoryPreferencesJson: JSON.stringify(["Technical", "Workshop", "Sports"]), organizerAffinityJson: JSON.stringify(["Lambda Club", "Programming Club"]),
   } });
-  if (await prisma.event.count()) { console.log("Events already present; seed skipped to preserve data."); return; }
+  if (await prisma.event.count()) {
+    const added = events.find((event) => event.title === "AI Study Circle")!;
+    if (!await prisma.event.findFirst({ where: { title: added.title, isDemo: true } })) {
+      await prisma.event.create({ data: { title: added.title, organizer: added.organizer, description: added.description, date: addDays(today, added.day), startTime: added.start, endTime: added.end, venue: added.venue, venueId: venueIds.get(added.venue), category: added.category, tagsJson: JSON.stringify(added.tags), expectedAudience: added.audience, popularity: added.popularity, isDemo: true } });
+      console.log("Added one missing demo search event; existing events and choices preserved.");
+    } else console.log("Events already present; seed skipped to preserve data.");
+    return;
+  }
   const seededIds = new Map<string, string>();
   for (const event of events) {
     const created = await prisma.event.create({ data: {
       title: event.title, organizer: event.organizer, description: event.description,
-      date: addDays(today, event.day), startTime: event.start, endTime: event.end, venue: event.venue,
+      date: addDays(today, event.day), startTime: event.start, endTime: event.end, venue: event.venue, venueId: venueIds.get(event.venue),
       category: event.category, tagsJson: JSON.stringify(event.tags), registrationDeadline: event.deadline === undefined ? null : addDays(today, event.deadline),
       expectedAudience: event.audience, popularity: event.popularity, isDemo: true,
     } });
