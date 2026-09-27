@@ -178,7 +178,8 @@ The app does not ingest private WhatsApp messages, emails, or club pages automat
 
 ## Team
 
-Team members and hostel block will be added before final submission.
+- **Team members:** Arnav and Vikas Gupta
+- **Hostel:** Bhabha
 
 ## Open-source acknowledgements
 
