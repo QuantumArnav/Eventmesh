@@ -2,9 +2,24 @@
 
 **One intelligent event layer for the entire campus.**
 
-EventMesh turns fragmented campus announcements into a searchable, explainable, conflict-aware event network. Built for the Lambda Hackathon theme **Smart Campus Solutions for IITH**.
+**Lambda Hackathon 2026 · Smart Campus Solutions for IITH**
+
+**Team:** Arnav and Vikas Gupta · **Hostel:** Bhabha
+
+Campus events are scattered across posters, messages, and club channels. EventMesh gives students one place to discover and plan events, while helping organizers turn announcements into listings and avoid scheduling clashes. Its scores are calculated from visible rules and explained in the interface.
+
+**Review path:** [Run locally](#run-locally) → [three-minute demo](#three-minute-judge-walkthrough) → [algorithms](#the-intelligence-explained) → [source map](#source-map).
 
 > **Demo data:** All seeded events, venues, organizer names, popularity values, and attendance estimates are illustrative. They are not the official IIT Hyderabad calendar, venue booking system, or live campus statistics. User-created events live only in the local SQLite database.
+
+## What makes it a smart campus solution
+
+| Campus problem | Working EventMesh response | Where to see it |
+| --- | --- | --- |
+| Students miss relevant events across scattered channels | Searchable feed, explained recommendations, and a clash-free plan built from saved events | `/discover`, `/my-schedule` |
+| Organizers spend time retyping announcements | Poster or pasted-text extraction into a validated, editable form | `/organizer/create` |
+| Clubs schedule for the same room or audience | Venue and audience conflict scores, duplicate checks, ranked alternatives, and a weekly pressure heatmap | `/organizer/create`, `/organizer/scheduling` |
+| Campus communities are hard to see together | Calculated organizer metrics and an interactive event-organizer-category-interest graph | `/organizer`, `/event-mesh` |
 
 ## Why EventMesh is different
 
@@ -13,9 +28,17 @@ EventMesh turns fragmented campus announcements into a searchable, explainable, 
 | Create → list → register | Ingest → understand → detect → optimize → recommend → coordinate |
 | Students search scattered announcements | Students see personalized discovery and an optimized day plan |
 | Organizers guess whether a slot is good | Organizers inspect venue, audience, duplicate, and event-pressure signals |
-| Scores appear as opaque badges | Every signal has a short explanation and deterministic formula |
+| Scores appear as opaque badges | Main decision scores show their reasons and deterministic formulas |
 
-The product connects three daily campus problems: discovering relevant events, turning messy announcements into structured listings, and choosing times that work for the community.
+The project joins **discovery, ingestion, and coordination** in one working flow. A student can choose what to attend; an organizer can see why another time or venue would work better.
+
+### Expected impact at IITH
+
+- **Students:** less searching across channels and fewer accidental timetable clashes.
+- **Organizers:** earlier notice of competing events or occupied rooms, with explainable alternatives.
+- **Campus communities:** clearer visibility into shared interests and opportunities to coordinate.
+
+These are intended benefits. The demo uses synthetic records, so it does not claim measured campus-wide impact.
 
 ## Working features
 
@@ -37,16 +60,16 @@ The product connects three daily campus problems: discovering relevant events, t
 - Scheduling Intelligence compares candidate dates, time windows, durations, audience tags, and venues using the same conflict engine.
 - A clickable weekly Event Pressure heatmap blends simultaneous events, shared interests, category concentration, estimated audience, and occupied venues.
 - Organizer dashboard computes event counts, high-conflict events, quieter hours, readiness, category mix, audience pairs, and pressure from current local data.
-- Interactive Event Mesh graph connects events, organizers, interests, and shared audiences.
+- Interactive Event Mesh graph connects events, organizers, categories, interests, and shared audiences.
 
 ## Run locally
 
-**Requirements:** Node.js 24 or another Node.js release supported by Next.js 16, npm. No hosted database is required.
+**Requirements:** Node.js 24 (or another version supported by Next.js 16) and npm. No hosted database, account, or API key is required for the seeded demo.
 
 ```bash
 git clone https://github.com/QuantumArnav/Eventmesh.git eventmesh-iith
 cd eventmesh-iith
-npm install
+npm ci
 ```
 
 Create `.env` from `.env.example`:
@@ -68,7 +91,9 @@ npm run db:setup
 npm run dev
 ```
 
-Open **http://localhost:3000**. `db:setup` creates SQLite, applies the committed migrations, and inserts 18 labeled demo events, a demo student profile, and a six-event plan. It is safe to rerun: existing events and choices remain. If port 3000 is busy, use the URL printed by Next.js.
+Open **http://localhost:3000**. `db:setup` creates SQLite, applies both committed migrations, and inserts 18 labeled demo events, a demo student profile, and a six-event plan. It is safe to rerun: existing events and choices remain. If port 3000 is busy, use the URL printed by Next.js.
+
+The local database is `prisma/dev.db`; it and `.env` are Git-ignored. To use a different SQLite file, change `DATABASE_URL` in `.env` before setup.
 
 ### Environment variables
 
@@ -78,20 +103,20 @@ Open **http://localhost:3000**. `db:setup` creates SQLite, applies the committed
 | `OPENAI_API_KEY` | Optional key for poster vision and AI text extraction |
 | `OPENAI_VISION_MODEL` | Optional compatible vision model; default `gpt-4.1-mini` |
 
-The key stays on the server and is not exposed as `NEXT_PUBLIC_`. With no key, the entire demo remains usable. Local text parsing handles simple announcements and is identified as a local parser in the interface. AI extraction requires a valid key and available quota; it has not been live-tested without a key.
+The key stays on the server and is not exposed as `NEXT_PUBLIC_`. Without a key, pasted text uses a clearly labeled local parser and poster upload falls back to manual entry. The OpenAI integration is implemented but **has not been live-tested with a key**; its result depends on valid credentials and available quota.
 
 There are no demo credentials. **Discover / My Schedule** are the student view; **Organizer / Create event / Scheduling / Event Mesh** are organizer intelligence views. Production authentication and official campus integrations are outside this hackathon MVP.
 
 ## Three-minute judge walkthrough
 
-1. **Discover:** search for `AI` and open a card. Show its relevance score and plain-language reason.
-2. **My Schedule:** the fresh demo database already contains six tracked events. Select **Build my plan**; the optimizer keeps compatible events and explains why it skips a clash. Change an event to **Must Attend** and recalculate instantly.
-3. **Organizer → Create event → Paste announcement:** click **Use demo announcement**, then **Extract details**. With no API key, the interface explicitly says **Local text parser**. All fields remain editable.
-4. **Check conflicts:** the seeded scenario produces a **high-similarity possible duplicate**, a **100/100 LH3 venue collision**, and a separate programming-audience overlap. Open the existing listing or continue reviewing.
-5. **Scheduling:** compare ranked alternative slots. Click the **third demo day at 6 PM** on the heatmap to see contributing events, audience estimate, tags, and pressure explanation. Show the lower-conflict 8 PM option.
-6. **Event Mesh:** click the AI workshop, Programming interest, and connected events to show how organizers and audiences relate. If time permits, return to the create form, apply a better slot, and publish.
+1. **Find a reason to attend.** Open `/discover`, search for `AI`, then open an event. Its relevance score names the matching interests, and the detail page shows related events.
+2. **Resolve a student's clash.** Open `/my-schedule`. The seeded profile tracks six events; click **Build my plan**. Compare selected and skipped events, then change one priority to **Must Attend** and recalculate.
+3. **Turn a message into an event.** Open `/organizer/create`, select **Paste announcement**, click **Use demo announcement**, then **Extract details**. Without a key, the UI says **Local text parser**. Review and edit the extracted fields before continuing.
+4. **Show the coordination problem.** Run the duplicate and conflict review. The seeded scenario finds a possible duplicate, an LH3 venue collision, and a separate programming-audience overlap. The organizer can view the existing event or continue anyway.
+5. **Find a better slot.** Open `/organizer/scheduling`. Compare ranked slots, then click the third seeded day at 6 PM on the heatmap. The details explain which events, audiences, and venues create pressure.
+6. **See the campus network.** Open `/event-mesh` and select an event, organizer, category, or interest. The panel explains the connections and links back to event details.
 
-All of these results are calculated from the local demo data, not hardcoded into the screens. On a fresh setup, dates are generated relative to the setup day so the scenario remains usable.
+These results are calculated from seeded records, not hardcoded into the screens. Fresh setup generates dates relative to the setup day, so the scenario stays usable after the hackathon. No publication is required to show the demo.
 
 ## Architecture
 
@@ -130,7 +155,7 @@ These are deterministic decision aids, not predictions of actual attendance, off
 | **Event Readiness** | Field completeness: title 10, date 15, valid time range 15, venue 15, useful description 10, category 10, tags 10, deadline 5, organizer 5, estimated audience 5. Missing optional details lower the score but never block publication. |
 | **Recommendation** | Interest match 45, category 20, suitable time 15, demo popularity 10, organizer affinity 10. The score is bounded to 0–100 and includes reasons. |
 | **Day Planner** | Weighted interval scheduling. Utility is recommendation score + 80 for Must Attend or + 20 for Saved, plus one point. Sort by end time, find the previous compatible event, use dynamic programming, and reconstruct the optimum. |
-| **Event Mesh** | A small graph of upcoming events, organizers, and prominent tags. Dotted audience links require at least 15% tag Jaccard overlap; clicking nodes reveals the actual connection. |
+| **Event Mesh** | A small graph of upcoming events, organizers, categories, and prominent tags. Dotted audience links require at least 15% tag Jaccard overlap; clicking nodes reveals the actual connection. |
 
 ## Technical stack
 
@@ -158,23 +183,28 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm audit --audit-level=moderate
 ```
 
-## Visual tour
+The final audit on a fresh database passed **21 unit tests**, ESLint, TypeScript typecheck, a production build, and npm audit with zero reported vulnerabilities. The scoped overrides in `package.json` update two transitive Prisma packages with published fixes; the migration and seed commands also passed with those versions. A production server returned HTTP 200 for the landing, discovery, schedule, organizer, creation, scheduling, and Event Mesh routes; the fresh API returned 18 events and six saved choices. A pasted announcement returned `Local text parser`, and the conflict API returned a duplicate, conflicts, and slot suggestions. The optional live OpenAI path is the one flow not verified with real credentials.
 
-Run the app and visit these screens for the actual interactive visuals:
+## Source map
 
-1. `/discover` — personalized event cards and search.
-2. `/my-schedule` — timeline, priority controls, and optimized plan.
-3. `/organizer/create` — announcement/poster intake, readiness, duplicate and conflict review.
-4. `/organizer/scheduling` — ranked slots and clickable seven-day heatmap.
-5. `/event-mesh` — interactive organizer-event-interest graph.
+| If you want to review… | Start here |
+| --- | --- |
+| Venue and audience conflict scoring | [`lib/conflict-engine.ts`](lib/conflict-engine.ts), [`tests/engines.test.ts`](tests/engines.test.ts) |
+| Slot ranking and event pressure | [`lib/scheduling-engine.ts`](lib/scheduling-engine.ts), [`lib/event-pressure.ts`](lib/event-pressure.ts) |
+| Duplicate detection and publish readiness | [`lib/duplicate-detector.ts`](lib/duplicate-detector.ts), [`lib/event-readiness.ts`](lib/event-readiness.ts) |
+| Weighted student plan | [`lib/schedule-optimizer.ts`](lib/schedule-optimizer.ts), [`tests/intelligence.test.ts`](tests/intelligence.test.ts) |
+| Optional AI extraction and its validated local fallback | [`lib/ai/event-extractor.ts`](lib/ai/event-extractor.ts), [`app/api/extract/route.ts`](app/api/extract/route.ts) |
+| Event graph and calendar export | [`lib/event-graph.ts`](lib/event-graph.ts), [`lib/ics.ts`](lib/ics.ts) |
+| Local data and repeatable demo setup | [`prisma/schema.prisma`](prisma/schema.prisma), [`prisma/seed.ts`](prisma/seed.ts), [`scripts/ensure-db.mjs`](scripts/ensure-db.mjs) |
 
-Static screenshots are not checked in; the live application is the source of truth for the submission.
+The interface itself is the visual demonstration; the diagram above shows the data flow for a GitHub-only review.
 
 ## Limits and next steps
 
-The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided in the create form. It does not reserve official venues. Organizer and student roles use one clearly labeled local demo profile, not production authentication. A campus deployment would need identity/permissions, verified organizers, official venue feeds, and consent-aware data handling.
+The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided in the create form. It does not reserve official venues. Organizer and student views share one clearly labeled local demo profile; there is no production authentication. A campus deployment would need identity and permissions, verified organizers, official venue feeds, and consent-aware data handling. Optional ideas from the initial brief such as a separate calendar page and light mode were not implemented; the working scheduling heatmap and timeline cover the core use cases.
 
 ## Team
 

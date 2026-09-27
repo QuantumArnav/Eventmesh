@@ -44,7 +44,7 @@ export default function SchedulingIntelligence() {
     setValidation(ranked.length ? "" : "No interval fits this window. Widen it or shorten the event.");
   };
 
-  return <div className="page-wrap"><div className="page-header"><div><div className="section-kicker"><Radar size={15} /> ORGANIZER INTELLIGENCE</div><h1 className="page-title">Find the right moment.</h1><p className="page-subtitle">Compare real campus signals before choosing a date, room, and audience.</p></div><Link href="/organizer/create" className="button button-secondary">Create event <ArrowRight size={16} /></Link></div>
+  return <div className="page-wrap"><div className="page-header"><div><div className="section-kicker"><Radar size={15} /> ORGANIZER INTELLIGENCE</div><h1 className="page-title">Find the right moment.</h1><p className="page-subtitle">Compare events in the local calendar before choosing a date, room, and audience.</p></div><Link href="/organizer/create" className="button button-secondary">Create event <ArrowRight size={16} /></Link></div>
     {error && <div className="notice error">{error}</div>}
     {loading ? <LoadingState /> : <><div className="intelligence-grid"><section className="panel intelligence-form"><div className="panel-heading"><div><span className="mini-label">SMART SCHEDULING</span><h2>Plan a campus event</h2></div><Sparkles size={19} color="#8ce9d6" /></div><div className="form-grid">
       <div className="field"><label htmlFor="sched-category">Category</label><select id="sched-category" value={category} onChange={(event) => setCategory(event.target.value as Category)}>{CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></div>
