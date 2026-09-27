@@ -4,7 +4,7 @@
 
 **Lambda Hackathon 2026 · Smart Campus Solutions for IITH**
 
-**Team:** Arnav and Vikas Gupta · **Hostel:** Bhabha
+**Team:** Arnav Singh · **Hostel:** Bhabha
 
 Campus events are scattered across posters, messages, and club channels. EventMesh gives students one place to discover and plan events, while helping organizers turn announcements into listings and avoid scheduling clashes. Its scores are calculated from visible rules and explained in the interface.
 
@@ -208,7 +208,7 @@ The app does not ingest private WhatsApp messages, emails, or club pages automat
 
 ## Team
 
-- **Team members:** Arnav and Vikas Gupta
+- **Team members:** Arnav Singh
 - **Hostel:** Bhabha
 
 ## Open-source acknowledgements
