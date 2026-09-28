@@ -16,4 +16,9 @@ describe("listing trust checks", () => {
     expect(result.status).toBe("Needs review");
     expect(result.checks.filter((check) => !check.passed).map((check) => check.label)).toEqual(expect.arrayContaining(["No likely duplicate in this calendar", "No high-severity listed conflict", "Venue fits expected audience"]));
   });
+  it("does not treat unknown venue capacity as a passed check", () => {
+    const result = assessEventTrust(event, [event]);
+    expect(result.status).toBe("Needs review");
+    expect(result.warnings).toContain("Venue fits expected audience: Capacity unavailable; confirm with venue owner");
+  });
 });

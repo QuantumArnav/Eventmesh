@@ -42,6 +42,16 @@ The project joins **discovery, ingestion, and coordination** in one working flow
 
 The workflow is **ingest → understand → verify → detect → match → optimize → recommend → coordinate**. The app keeps unstructured extraction, deterministic decisions, and data summaries separate; this makes each score inspectable and testable.
 
+### Three kinds of intelligence
+
+| Kind | What it does | Implementation |
+| --- | --- | --- |
+| **AI / unstructured** | Proposes fields from a supplied poster or announcement and interprets natural-language search as filters | Optional OpenAI extraction and search interpretation; local text and search rules when no key is configured |
+| **Deterministic algorithmic** | Scores conflicts, duplicates, venues, event pressure, readiness, schedules, and recommendations | Pure TypeScript engines with reasons, bounded scores, and tests |
+| **Data** | Summarizes the current local calendar for organizer decisions | Dashboard metrics, category distribution, venue counts, event pressure, and event graph |
+
+The local text parser is rule based. AI paths require a configured provider key. Neither path creates official campus data.
+
 ### Expected impact at IITH
 
 - **Students:** less searching across channels and fewer accidental timetable clashes.
@@ -70,7 +80,7 @@ These are intended benefits. The demo uses synthetic records, so it does not cla
 - Important extracted fields show evidence-based **High confidence**, **Review suggested**, or **Uncertain** labels. Relative dates without a source date and incomplete venues remain empty with warnings. These labels are heuristic evidence tiers, not calibrated AI probabilities.
 - **Smart Venue Intelligence** ranks seeded venue profiles using audience fit (30 points), requested facilities (25), listed-calendar availability (25), type suitability (10), and concurrent event pressure (10). It explains missing facilities, oversized rooms, and collisions. A preferred-area mismatch subtracts eight points.
 - Zod validation, a transparent Event Readiness score, and duplicate suggestions before publishing.
-- The organizer form shows an **intelligence pipeline** driven by actual draft validity and analysis state. Its reusable explanation panel shows venue reasons and warnings; unfinished checks stay visibly pending.
+- The organizer form shows an **intelligence pipeline** driven by actual draft validity and analysis state. Structured extraction is marked complete, pending, or skipped according to the source. Reusable explanation panels show recommendation, duplicate, conflict, venue, slot, and readiness reasons; unfinished checks stay visibly pending.
 - Conflict Intelligence distinguishes venue collisions from audience overlap, shows reasons, and offers lower-conflict alternatives.
 - Scheduling Intelligence compares candidate dates, time windows, durations, audience tags, and venues using the same conflict engine.
 - A clickable weekly Event Pressure heatmap blends simultaneous events, shared interests, category concentration, estimated audience, and occupied venues.
@@ -81,7 +91,7 @@ These are intended benefits. The demo uses synthetic records, so it does not cla
 
 ## Guided demo
 
-Open `/demo` first. Its proposed Lambda workshop is compared with seeded listings by the real duplicate, conflict, slot, and venue engines. The route shows the detected signals without creating an event. Then open `/organizer/create`, select **Load demo example**, and run the conflict check yourself. Dates follow the existing seeded Lambda workshop, so the scenario remains connected even when the seed database was created earlier.
+Open `/demo` first. Its proposed Lambda workshop is compared with seeded listings by the real duplicate, conflict, slot, and venue engines. The route shows the detected signals without creating an event, followed by **How EventMesh Works**, an eight-stage judge-facing explanation of the methods and their purpose. Then open `/organizer/create`, select **Load demo example**, and run the conflict check yourself. Dates follow the existing seeded Lambda workshop, so the scenario remains connected even when the seed database was created earlier.
 
 The [3–4 minute speaking script](docs/demo-script.md) gives a concise sequence for judges.
 

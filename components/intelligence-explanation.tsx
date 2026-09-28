@@ -1,3 +1,3 @@
-export function IntelligenceExplanation({ title, score, reasons, warnings = [] }: { title: string; score?: number; reasons: string[]; warnings?: string[] }) {
-  return <div className="intelligence-explanation" aria-label={title}><div><strong>{title}</strong>{score !== undefined && <span>{score}/100</span>}</div><ul>{reasons.map((reason) => <li key={reason}>✓ {reason}</li>)}{warnings.map((warning) => <li className="warning" key={warning}>⚠ {warning}</li>)}</ul></div>;
+export function IntelligenceExplanation({ title, score, scoreLabel = "score", reasons, warnings = [], tone = "positive" }: { title: string; score?: number; scoreLabel?: string; reasons: string[]; warnings?: string[]; tone?: "positive" | "neutral" }) {
+  return <div className="intelligence-explanation" aria-label={title}><div><strong>{title}</strong>{score !== undefined && <span>{scoreLabel}: {score}/100</span>}</div><ul>{reasons.map((reason) => <li key={reason}>{tone === "positive" ? "✓" : "•"} {reason}</li>)}{warnings.map((warning) => <li className="warning" key={warning}>⚠ {warning}</li>)}</ul></div>;
 }
