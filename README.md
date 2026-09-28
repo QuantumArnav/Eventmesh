@@ -6,13 +6,27 @@
 
 **Team:** Arnav Singh and Vikas Gupta · **Hostel:** Bhabha
 
+[![CI](https://github.com/QuantumArnav/Eventmesh/actions/workflows/ci.yml/badge.svg)](https://github.com/QuantumArnav/Eventmesh/actions/workflows/ci.yml) · [Release report](docs/release-report.md) · [3–4 minute demo script](docs/demo-script.md)
+
 Campus events are scattered across posters, messages, and club channels. EventMesh gives students one place to discover and plan events, while helping organizers turn announcements into listings and avoid scheduling clashes. Its scores are calculated from visible rules and explained in the interface.
 
-The interface has two connected views: a **campus event guide** for students and a **scheduling workspace** for organizers. Start with [Discover](#working-features) to browse and save events, then use the [guided demo](#guided-demo) to see the organizer checks. The [design audit](docs/design-audit.md) and [design review](docs/design-review.md) explain the visual system and its verification.
+The interface has two connected views: a **campus event guide** for students and a **scheduling workspace** for organizers. Start with [Discover](#student-experience) to browse and save events, then use the [guided demo](#guided-demo) to see the organizer checks. The [design audit](docs/design-audit.md) and [design review](docs/design-review.md) explain the visual system and its verification.
 
 **Review path:** [Run locally](#run-locally) → [guided demo](#guided-demo) → [evaluation](#evaluation) → [algorithms](#the-intelligence-explained) → [source map](#source-map).
 
 > **Demo data:** All seeded events, venues, organizer names, popularity values, and attendance estimates are illustrative. They are not the official IIT Hyderabad calendar, venue booking system, or live campus statistics. User-created events live only in the local SQLite database.
+
+## See EventMesh
+
+These are screenshots of the running production build with a freshly seeded demo database on 28 September 2026.
+
+| Student Discover | Organizer conflict intelligence |
+| --- | --- |
+| ![Student Discover view with Smart Search and campus event guide](docs/assets/discover.png) | ![Organizer view showing calculated venue and audience conflicts](docs/assets/conflicts.png) |
+
+| Scheduling and event pressure | Event Mesh |
+| --- | --- |
+| ![Ranked scheduling alternatives and weekly pressure heatmap](docs/assets/scheduling.png) | ![Interactive graph linking events, organizers, categories and interests](docs/assets/event-mesh.png) |
 
 ## Problem
 
@@ -99,7 +113,7 @@ The [3–4 minute speaking script](docs/demo-script.md) gives a concise sequence
 
 ## Run locally
 
-**Requirements:** Node.js 24 (or another version supported by Next.js 16) and npm. No hosted database, account, or API key is required for the seeded demo.
+**Requirements:** Node.js 24 and npm. No hosted database, account, or API key is required for the seeded demo.
 
 ```bash
 git clone https://github.com/QuantumArnav/Eventmesh.git eventmesh-iith
@@ -218,7 +232,7 @@ Run `npm run evaluate`. The [measured synthetic evaluation](docs/evaluation.md) 
 
 - Next.js 16 App Router, React 19, strict TypeScript
 - Tailwind CSS 4 / custom design system, Lucide icons
-- Prisma 6 + local SQLite with committed migrations and seed data
+- Prisma 6 + SQLite with committed migrations and seed data; Sharp decodes uploaded posters before acceptance
 - Zod 4 validation
 - OpenAI Responses API for optional vision/text extraction
 - Vitest for algorithmic tests
@@ -250,7 +264,11 @@ npm run build
 npm audit --audit-level=moderate
 ```
 
-At the latest local checkpoint, 41 tests, ESLint, TypeScript, production build, and the offline evaluation passed. Four of those tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials.
+At the 28 September release checkpoint, 43 tests, ESLint, TypeScript, a clean production build, and the offline evaluation passed. Four tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials. The release build also passed `npm audit --audit-level=moderate` with zero reported vulnerabilities.
+
+## Deployment
+
+The committed Dockerfile supports a single-container deployment with a persistent SQLite volume at `/app/prisma/data`, `DATABASE_URL=file:./data/dev.db`, startup migrations and seed, and a database-backed `/api/health` check. [GitHub Actions](https://github.com/QuantumArnav/Eventmesh/actions/runs/36462480659) verified an event survives container recreation with the same volume. See the [deployment guide](docs/deployment.md) for exact Railway steps and the paid-disk Render alternative. A public production URL has **not** been verified, so this README does not claim a live hosted demo. The previously shared Cloudflare tunnel is temporary and depends on the owner's computer.
 
 See the [final quality checks](docs/quality-checks.md) for runtime, accessibility, performance, and deployment evidence with its limits.
 
@@ -270,11 +288,11 @@ See the [final quality checks](docs/quality-checks.md) for runtime, accessibilit
 | Event graph and calendar export | [`lib/event-graph.ts`](lib/event-graph.ts), [`lib/ics.ts`](lib/ics.ts) |
 | Local data and repeatable demo setup | [`prisma/schema.prisma`](prisma/schema.prisma), [`prisma/seed.ts`](prisma/seed.ts), [`scripts/ensure-db.mjs`](scripts/ensure-db.mjs) |
 
-The interface itself is the visual demonstration; the diagram above shows the data flow for a GitHub-only review.
+The screenshots above show the current UI; the diagram shows the data flow for a GitHub-only review.
 
 ## Limits and next steps
 
-The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided by a user. Poster bytes and raw announcement text are stored only in local SQLite when staged in the inbox; there is no retention policy or production access control, so this prototype should not be deployed for sensitive submissions. It does not reserve official venues. Organizer and student views share one clearly labeled local demo profile; there is no production authentication. A campus deployment would need identity and permissions, verified organizers, official venue feeds, and consent-aware data handling. Optional ideas from the initial brief such as a separate calendar page and light mode were not implemented; the working scheduling heatmap and timeline cover the core use cases.
+The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided by a user. Poster bytes and raw announcement text are stored in SQLite when staged in the inbox; there is no retention policy or production access control, so a public demo must use disposable content and access protection. It does not reserve official venues. Organizer and student views share one clearly labeled demo profile; there is no production authentication. A campus deployment would need identity and permissions, verified organizers, official venue feeds, and consent-aware data handling. Optional ideas from the initial brief such as a separate calendar page and light mode were not implemented; the working scheduling heatmap and timeline cover the core use cases.
 
 ## Data disclaimer
 
@@ -291,4 +309,4 @@ With campus approval: verified organizer identity, official room inventory and b
 
 ## Open-source acknowledgements
 
-Built during the hackathon using the open-source frameworks and libraries listed in `package.json`: Next.js, React, Prisma, Zod, Tailwind CSS, Lucide, qrcode.react, and Vitest. No pre-existing EventMesh application code or external UI template was used. Optional extraction calls the OpenAI API through its SDK.
+Built during the hackathon using the open-source frameworks and libraries listed in `package.json`: Next.js, React, Prisma, Zod, Sharp, Tailwind CSS, Lucide, qrcode.react, and Vitest. No pre-existing EventMesh application code or external UI template was used. Optional extraction calls the OpenAI API through its SDK.
