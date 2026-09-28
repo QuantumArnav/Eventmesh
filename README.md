@@ -248,7 +248,7 @@ npm run build
 npm audit --audit-level=moderate
 ```
 
-At the latest local checkpoint, 40 tests, ESLint, TypeScript, production build, and the offline evaluation passed. Four of those tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials.
+At the latest local checkpoint, 41 tests, ESLint, TypeScript, production build, and the offline evaluation passed. Four of those tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials.
 
 See the [final quality checks](docs/quality-checks.md) for runtime, accessibility, performance, and deployment evidence with its limits.
 

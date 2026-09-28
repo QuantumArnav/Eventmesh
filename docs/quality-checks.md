@@ -15,7 +15,7 @@ npm run build
 npm audit --audit-level=moderate
 ```
 
-At the latest local checkpoint, dependency installation, five database migrations and seed, ESLint, TypeScript, 40 unit tests, the offline evaluation, and the production build succeeded. The dependency audit reported no vulnerabilities. The optional OpenAI routes were exercised with a mocked provider; real credentials and real posters were unavailable for a live accuracy check.
+At the latest local checkpoint, dependency installation, five database migrations and seed, ESLint, TypeScript, 41 unit tests, the offline evaluation, and the production build succeeded. The dependency audit reported no vulnerabilities. The optional OpenAI routes were exercised with a mocked provider; real credentials and real posters were unavailable for a live accuracy check.
 
 ## Runtime and interface
 
