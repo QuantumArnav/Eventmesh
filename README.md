@@ -14,7 +14,7 @@ The interface has two connected views: a **campus event guide** for students and
 
 **Review path:** [Run locally](#run-locally) → [guided demo](#guided-demo) → [evaluation](#evaluation) → [algorithms](#the-intelligence-explained) → [source map](#source-map).
 
-> **Demo data:** All seeded events, venues, organizer names, popularity values, and attendance estimates are illustrative. They are not the official IIT Hyderabad calendar, venue booking system, or live campus statistics. User-created events live only in the local SQLite database.
+> **Demo data:** Seed data mixes illustrative events with selected event details adapted from IIT Hyderabad-wide announcements received in 2026. These are static demonstration records and may become outdated. EventMesh is not connected to the institute's official calendar, email system, or venue booking system. Venue profiles, popularity values, and attendance estimates are illustrative. User-created events live only in the local SQLite database.
 
 ## See EventMesh
 
@@ -296,7 +296,7 @@ The app does not ingest private WhatsApp messages, emails, or club pages automat
 
 ## Data disclaimer
 
-**The current prototype uses demo seed data unless explicitly identified otherwise. It is not the official IITH event or venue booking system.** Capacities, facility flags, popularity, attendance, and event listings are illustrative. EventMesh only checks collisions against its own local records.
+**The current prototype uses static demo seed data. It is not the official IITH event or venue booking system.** Some seeded event details are adapted from IIT Hyderabad announcements; other events are illustrative scenarios for the guided demo. Seeded information may become outdated because it is not synchronized with institute email or calendar systems. Venue capacities, facility flags, popularity, and attendance estimates are illustrative. EventMesh only checks collisions against its own local records.
 
 ## Future scope
 

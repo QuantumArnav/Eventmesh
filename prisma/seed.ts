@@ -6,6 +6,7 @@ import type { Category } from "../lib/types";
 const prisma = new PrismaClient();
 const today = todayInIsth();
 type SeedEvent = { title: string; organizer: string; description: string; day: number; start: string; end: string; venue: string; category: Category; tags: string[]; audience: number; popularity: number; deadline?: number };
+// Deterministic relative demo scenario. Keep these dates relative so the guided conflict walkthrough remains usable.
 const events: SeedEvent[] = [
   { title: "Milan Football Practice", organizer: "Sports Council", description: "Open practice for the inter-hostel football squad. All skill levels welcome.", day: 0, start: "17:00", end: "18:15", venue: "Sports Complex", category: "Sports", tags: ["Football", "Milan", "Fitness"], audience: 80, popularity: 78 },
   { title: "Astronomy Observation Night", organizer: "Astronomy Club", description: "Explore Saturn and the night sky through telescopes with fellow students.", day: 0, start: "20:00", end: "21:30", venue: "Academic Block Terrace", category: "Community", tags: ["Astronomy", "Science", "Stargazing"], audience: 70, popularity: 72 },
@@ -28,6 +29,33 @@ const events: SeedEvent[] = [
   { title: "Campus Climate Action Forum", organizer: "Prakriti Club", description: "Discuss practical student-led sustainability projects for IITH.", day: 7, start: "18:00", end: "19:30", venue: "Convention Centre", category: "Community", tags: ["Sustainability", "Campus", "Climate"], audience: 70, popularity: 58 },
 ];
 
+type AnnouncementEvent = { title: string; organizer: string; description: string; date: string; startTime: string; endTime: string; venue: string; category: Category; tags: string[] };
+// Static events adapted from IITH announcements received in 2026. These are demo listings, not an official or live calendar.
+// Announcements without a verified end time or a single-day slot are omitted because Event requires both.
+const announcementEvents: AnnouncementEvent[] = [
+  {
+    title: "Water Conservation and Rainwater Harvesting",
+    organizer: "Office of Dean Students / SHS Campaign",
+    description: "A special talk by Prof. K. B. V. N. Phanindra on water conservation and rainwater harvesting as part of the Swachhata Hi Seva Campaign 2026.",
+    date: "2026-09-29", startTime: "16:00", endTime: "17:00", venue: "Senate Hall", category: "Talk",
+    tags: ["Sustainability", "Water", "Environment", "Campus"],
+  },
+  {
+    title: "Study, Research and Career Opportunities in Saxony, Germany",
+    organizer: "Office of International Relations",
+    description: "An online seminar featuring representatives from universities and industry in Saxony covering study, research and career opportunities in microelectronics, semiconductor technologies, communication networks and cybersecurity.",
+    date: "2026-10-07", startTime: "15:30", endTime: "16:30", venue: "Online", category: "Talk",
+    tags: ["Germany", "Research", "Semiconductors", "Cybersecurity", "International"],
+  },
+  {
+    title: "Insights from a Successful JSPS Postdoctoral Fellowship Application",
+    organizer: "Department of Materials Science and Metallurgical Engineering",
+    description: "An interaction with Dr. Pankaj Ojha sharing practical experience from a successful JSPS postdoctoral fellowship application.",
+    date: "2026-10-07", startTime: "15:30", endTime: "16:30", venue: "MSME Conference Room 110", category: "Talk",
+    tags: ["Research", "Fellowship", "PhD", "Japan", "Career"],
+  },
+];
+
 // Invented capacities and facilities for the hackathon demo; never treat these as official IITH inventory.
 const demoVenues = [
   { name: "LH1", building: "Lecture Hall Complex", area: "Academic zone", capacity: 160, type: "Lecture hall", hasProjector: true, hasAudioSystem: true, hasStage: false, indoor: true, accessible: true },
@@ -38,6 +66,22 @@ const demoVenues = [
   { name: "Sports Complex", building: "Sports Complex", area: "Sports zone", capacity: 200, type: "Sports facility", hasProjector: false, hasAudioSystem: true, hasStage: false, indoor: false, accessible: true },
   { name: "Hostel Common Room", building: "Hostel area", area: "Residential zone", capacity: 85, type: "Common room", hasProjector: false, hasAudioSystem: true, hasStage: false, indoor: true, accessible: true },
 ] as const;
+
+async function seedAnnouncementEvents(venueIds: Map<string, string>) {
+  let added = 0;
+  for (const event of announcementEvents) {
+    const duplicate = await prisma.event.findFirst({ where: { title: event.title, date: event.date, organizer: event.organizer }, select: { id: true } });
+    if (duplicate) continue;
+    await prisma.event.create({ data: {
+      title: event.title, organizer: event.organizer, description: event.description,
+      date: event.date, startTime: event.startTime, endTime: event.endTime,
+      venue: event.venue, venueId: venueIds.get(event.venue), category: event.category,
+      tagsJson: JSON.stringify(event.tags), expectedAudience: null, isDemo: true,
+    } });
+    added++;
+  }
+  return added;
+}
 
 async function main() {
   for (const venue of demoVenues) await prisma.venue.upsert({
@@ -54,7 +98,8 @@ async function main() {
     if (!await prisma.event.findFirst({ where: { title: added.title, isDemo: true } })) {
       await prisma.event.create({ data: { title: added.title, organizer: added.organizer, description: added.description, date: addDays(today, added.day), startTime: added.start, endTime: added.end, venue: added.venue, venueId: venueIds.get(added.venue), category: added.category, tagsJson: JSON.stringify(added.tags), expectedAudience: added.audience, popularity: added.popularity, isDemo: true } });
       console.log("Added one missing demo search event; existing events and choices preserved.");
-    } else console.log("Events already present; seed skipped to preserve data.");
+    } else console.log("Relative demo events already present; seed skipped to preserve data.");
+    console.log(`Added ${await seedAnnouncementEvents(venueIds)} announcement-based demo events; existing choices preserved.`);
     return;
   }
   const seededIds = new Map<string, string>();
@@ -75,7 +120,8 @@ async function main() {
     const eventId = seededIds.get(title);
     if (eventId) await prisma.savedEvent.create({ data: { studentId: "demo-student", eventId, preference } });
   }
-  console.log(`Seeded ${events.length} clearly labeled demo events and a six-event student plan starting ${today}.`);
+  const announcementCount = await seedAnnouncementEvents(venueIds);
+  console.log(`Seeded ${events.length} relative demo events and ${announcementCount} announcement-based demo events, plus a six-event student plan starting ${today}.`);
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());
