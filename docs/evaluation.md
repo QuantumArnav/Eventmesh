@@ -18,7 +18,7 @@ Run `npm run evaluate` to reproduce these numbers. The script uses a small, synt
 
 The duplicate benchmark includes exact listings, a title suffix, a misspelling, a room change, a next-month listing, an unrelated sports event, and a next-day listing. The conflict cases include full and partial venue overlaps, similar and different audiences, a back-to-back boundary, and another day. Venue cases cover an ideal room, too-small and oversized rooms, a missing projector, and an occupied room.
 
-The announcement cases include repeated clear templates and three differently worded notices. The local parser missed titles outside its phrase patterns, two unfamiliar venue names, and the `E-Cell` organizer form. Organizers must review all extracted fields; no extracted draft is published automatically. The numbers cover the **offline parser only**. The optional OpenAI vision/text path was not measured because this run used no external API key or real posters.
+The announcement cases include repeated clear templates and three differently worded notices. The local parser missed titles outside its phrase patterns, two unfamiliar venue names, and the `E-Cell` organizer form. Organizers must review all extracted fields; no extracted draft is published automatically. The numbers cover the **offline parser only**. Four separate unit tests mock the OpenAI provider to verify structured search, invalid-output fallback, poster draft parsing, and provider failure. Those mocks are contract checks, not accuracy measurements. The optional live OpenAI vision/text/search paths were not measured because this run used no external API key or real posters.
 
 ## Limits and next experiment
 

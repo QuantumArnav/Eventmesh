@@ -74,10 +74,10 @@ These are intended benefits. The demo uses synthetic records, so it does not cla
 - Conflict Intelligence distinguishes venue collisions from audience overlap, shows reasons, and offers lower-conflict alternatives.
 - Scheduling Intelligence compares candidate dates, time windows, durations, audience tags, and venues using the same conflict engine.
 - A clickable weekly Event Pressure heatmap blends simultaneous events, shared interests, category concentration, estimated audience, and occupied venues.
-- Organizer dashboard computes event counts, high-conflict events, quieter hours, readiness, category mix, audience pairs, and pressure from current local data.
+- Organizer dashboard computes events in the next seven days, high-conflict events, quieter hours, peak event hours, readiness, category mix, audience pairs, and pressure from current local data.
 - The dashboard also shows which named venues host the most listed events. This is a local listing count, not official booking utilization.
 - Interactive Event Mesh graph connects events, organizers, categories, interests, and shared audiences.
-- Event detail pages have a copyable URL, event-specific social metadata, and a transparent listing-quality note.
+- Event detail pages have a copyable URL, a QR code for the current page URL, event-specific social metadata, and transparent listing checks. A QR code generated on `localhost` is for local demonstration; external scanning needs a deployed URL.
 
 ## Guided demo
 
@@ -238,7 +238,9 @@ npm run build
 npm audit --audit-level=moderate
 ```
 
-At the latest local checkpoint, 34 unit tests, ESLint, TypeScript, production build, and the offline evaluation passed. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials.
+At the latest local checkpoint, 40 tests, ESLint, TypeScript, production build, and the offline evaluation passed. Four of those tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials.
+
+See the [final quality checks](docs/quality-checks.md) for runtime, accessibility, performance, and deployment evidence with its limits.
 
 ## Source map
 
@@ -268,7 +270,7 @@ The app does not ingest private WhatsApp messages, emails, or club pages automat
 
 ## Future scope
 
-With campus approval: verified organizer identity, official room inventory and bookings, consented event feeds, multi-user accounts, and evaluation on independently labeled real announcements. These are proposals, not current features.
+With campus approval: verified organizer identity, official room inventory and bookings, consented event feeds, multi-user accounts, and evaluation on independently labeled real announcements. These are proposals, not current features. See [future integration boundaries](docs/future-integrations.md) for the adapter shape and required review steps.
 
 ## Team
 
@@ -277,4 +279,4 @@ With campus approval: verified organizer identity, official room inventory and b
 
 ## Open-source acknowledgements
 
-Built during the hackathon using the open-source frameworks and libraries listed in `package.json`: Next.js, React, Prisma, Zod, Tailwind CSS, Lucide, and Vitest. No pre-existing EventMesh application code or external UI template was used. Optional extraction calls the OpenAI API through its SDK.
+Built during the hackathon using the open-source frameworks and libraries listed in `package.json`: Next.js, React, Prisma, Zod, Tailwind CSS, Lucide, qrcode.react, and Vitest. No pre-existing EventMesh application code or external UI template was used. Optional extraction calls the OpenAI API through its SDK.

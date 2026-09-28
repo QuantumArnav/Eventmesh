@@ -85,6 +85,13 @@
 .trust-warning { color: #f1c77d; font-size: 12px; }
 :where(a, button, input, textarea, select, summary):focus-visible { outline: 3px solid #8ce9d6; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+.qr-share { margin-top: 18px; padding: 16px; display: flex; align-items: center; gap: 18px; border: 1px solid var(--line); border-radius: 12px; background: #12263a; overflow-wrap: anywhere; animation: qr-reveal .18s ease-out; }
+@keyframes qr-reveal { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.qr-share svg { flex: none; border-radius: 7px; }
+.qr-share strong { display: block; font-size: 13px; }
+.qr-share p { margin: 6px 0; font-size: 11px; color: var(--muted); }
+.qr-share small { color: #f1c77d; font-size: 11px; }
+@media (max-width: 560px) { .qr-share { flex-direction: column; align-items: flex-start; } }
 .intelligence-explanation { margin: 10px 0; }
 .intelligence-explanation > div { display: flex; justify-content: space-between; gap: 8px; color: #bdebdc; font-size: 12px; }
 .intelligence-explanation ul { padding-left: 17px; margin: 8px 0; font-size: 12px; line-height: 1.5; }

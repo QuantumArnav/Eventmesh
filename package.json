@@ -12,7 +12,7 @@
     "test": "vitest run",
     "evaluate": "tsx evaluation/run.ts",
     "db:migrate": "node scripts/ensure-db.mjs && prisma migrate dev",
-    "db:setup": "node scripts/ensure-db.mjs && prisma migrate deploy && npm run db:seed",
+    "db:setup": "node scripts/ensure-db.mjs && prisma generate && prisma migrate deploy && npm run db:seed",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "postinstall": "prisma generate"
@@ -23,6 +23,7 @@
     "lucide-react": "^0.468.0",
     "next": "16.3.6",
     "openai": "^7.23.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zod": "^4.1.13"
