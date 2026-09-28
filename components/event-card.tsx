@@ -18,6 +18,6 @@ export function EventCard({ event, student, saved, onToggle }: { event: EventDat
     <div className="event-tags">{event.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
     <div className="card-meta"><span><Clock3 size={15} /> {formatTime(event.startTime)} – {formatTime(event.endTime)}</span><span><MapPin size={15} /> {event.venue}</span></div>
     <div className="card-footer"><div className="card-organizer"><span className="organizer-avatar">{event.organizer.slice(0, 1)}</span><span>{event.organizer}</span></div><Link href={`/events/${event.id}`} aria-label={`View ${event.title}`}><ArrowUpRight size={18} /></Link></div>
-    {recommendation && <div className="relevance"><div><strong>{recommendation.score}%</strong> relevant for you</div><span>{recommendation.reasons[0]}</span></div>}
+    {recommendation && <div className="relevance"><div><strong>{recommendation.score}/100</strong> relevance score</div><span>{recommendation.reasons[0]}</span></div>}
   </article>;
 }
