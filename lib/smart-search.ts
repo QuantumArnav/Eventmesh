@@ -40,19 +40,25 @@ export function parseSmartQuery(text: string, today: string): SmartQuery {
   const tags = ["AI", "Programming", "Robotics", "Music", "Football", "Design", "Startups", "Astronomy", "Cybersecurity", "Machine Learning"].filter((value) => lower.includes(value.toLowerCase()));
   const after = lower.match(/\b(?:after|from)\s+(\d{1,2})(?::([0-5]\d))?\s*(am|pm)\b/);
   const before = lower.match(/\b(?:before|to|until)\s+(\d{1,2})(?::([0-5]\d))?\s*(am|pm)\b/);
+  const between = lower.match(/\bbetween\s+(\d{1,2})(?::([0-5]\d))?\s*(am|pm)?\s+(?:and|to)\s+(\d{1,2})(?::([0-5]\d))?\s*(am|pm)\b/);
   const hours = lower.match(/\b(\d+|one|two|three|four|five|six)\s+hours?\b/);
   const hourWords: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
   const maxDuration = hours ? (hourWords[hours[1]] ?? Number(hours[1])) * 60 : null;
   let afterTime = after ? parseClock(after[1], after[2], after[3]) : null;
   let beforeTime = before ? parseClock(before[1], before[2], before[3]) : null;
+  if (between) {
+    afterTime = parseClock(between[1], between[2], between[3] ?? between[6]);
+    beforeTime = parseClock(between[4], between[5], between[6]);
+  }
   if (/\btonight\b/.test(lower) && !afterTime) afterTime = "18:00";
   if (/\btonight\b/.test(lower) && !beforeTime) beforeTime = "22:00";
   if (/\bbefore dinner\b/.test(lower) && !beforeTime) beforeTime = "19:00";
   if (!dateFrom && /\b(?:i am|i'm) free (?:from|between)\b/.test(lower)) dateFrom = dateTo = today;
   if (maxDuration !== null && (maxDuration < 15 || maxDuration > 1440)) return parseSmartQuery(text.replace(/\d+\s+hours?\s*(free)?/i, ""), today);
-  const constrained = categories.length || tags.length || dateFrom || afterTime || beforeTime || maxDuration;
+  const avoidScheduleConflicts = /don'?t clash|no conflicts?|avoid conflicts?|free (?:from|between)/.test(lower);
+  const constrained = categories.length || tags.length || dateFrom || afterTime || beforeTime || maxDuration || avoidScheduleConflicts;
   return smartQuerySchema.parse({ categories, tags, dateFrom, dateTo, afterTime, beforeTime, maxDuration,
-    avoidScheduleConflicts: /don'?t clash|no conflicts?|avoid conflicts?|free (?:from|between)/.test(lower),
+    avoidScheduleConflicts,
     freeText: constrained ? "" : text.trim().slice(0, 200) });
 }
 

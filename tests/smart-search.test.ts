@@ -18,6 +18,10 @@ describe("Smart Search", () => {
     expect(window.beforeTime).toBe("21:00");
     expect(window.avoidScheduleConflicts).toBe(true);
     expect(parseSmartQuery("I have two hours free tonight", today).maxDuration).toBe(120);
+    const casualWindow = parseSmartQuery("things I can attend between 6 and 9 PM", today);
+    expect(casualWindow.afterTime).toBe("18:00");
+    expect(casualWindow.beforeTime).toBe("21:00");
+    expect(casualWindow.freeText).toBe("");
   });
   it("returns only events from the supplied database rows", () => {
     const rows = [event("one", "AI Lab", "2026-09-28", "18:30", "19:30", ["AI"]), event("two", "Morning coding", "2026-09-28", "10:00", "11:00", ["Programming"])];
@@ -28,5 +32,9 @@ describe("Smart Search", () => {
     const rows = [event("saved", "My plan", "2026-09-28", "18:00", "19:00", ["AI"]), event("clash", "Other", "2026-09-28", "18:30", "19:30", ["AI"]), event("later", "Later", "2026-09-28", "19:30", "20:30", ["AI"])];
     const results = smartSearch(parseSmartQuery("AI tomorrow that don't clash with my schedule", today), rows, null, ["saved"]);
     expect(results.map((item) => item.event.id)).toEqual(["saved", "later"]);
+    const generic = parseSmartQuery("events that don't clash with my saved schedule", today);
+    expect(generic.avoidScheduleConflicts).toBe(true);
+    expect(generic.freeText).toBe("");
+    expect(smartSearch(generic, rows, null, ["saved"]).map((item) => item.event.id)).toEqual(["saved", "later"]);
   });
 });
