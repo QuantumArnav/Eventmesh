@@ -123,10 +123,11 @@ The local database is `prisma/dev.db`; it and `.env` are Git-ignored. To use a d
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | Local SQLite path; default `file:./dev.db` |
-| `OPENAI_API_KEY` | Optional key for poster vision and AI text extraction |
+| `OPENAI_API_KEY` | Optional key for poster/text extraction and Smart Search interpretation |
 | `OPENAI_VISION_MODEL` | Optional compatible vision model; default `gpt-4.1-mini` |
+| `OPENAI_SEARCH_MODEL` | Optional Smart Search interpretation model; default `gpt-4.1-mini` |
 
-The key stays on the server and is not exposed as `NEXT_PUBLIC_`. Without a key, pasted text uses a clearly labeled local parser and poster upload falls back to manual entry. The OpenAI integration is implemented but **has not been live-tested with a key**; its result depends on valid credentials and available quota. Smart Search uses a deterministic local interpretation layer, with no external model call.
+The key stays on the server and is not exposed as `NEXT_PUBLIC_`. Without a key, pasted text and Smart Search use clearly labeled local rules, while poster upload falls back to manual entry. The OpenAI integration is implemented but **has not been live-tested with a key**; its result depends on valid credentials and available quota.
 
 There are no demo credentials. **Discover / My Schedule** are the student view; **Organizer / Create event / Scheduling / Event Mesh** are organizer intelligence views. Production authentication and official campus integrations are outside this hackathon MVP.
 
@@ -186,7 +187,7 @@ These are deterministic decision aids, not predictions of actual attendance, off
 | **Scheduling** | Enumerate 30-minute starts across the requested window, venues, and up to three days. Run the conflict engine for every candidate. Combined score is `0.7 × worst conflict + 0.3 × mean conflict + 15 if venue collides`. Rank available venues first, then lower score. |
 | **Duplicate** | Weighted similarity: title 32, organizer 18, date 22, start time 10, venue 10, tags 8. Title uses token Jaccard and normalized edit distance. Distant dates sharply reduce the score; a match needs at least 70/100 and a sufficiently similar title. Organizers may continue anyway. |
 | **Venue Match** | Capacity fit prefers roughly 55–90% expected occupancy; undersized rooms get zero capacity points and oversized rooms lose points. Facilities, available listed-calendar time, event-type fit, and concurrent large events complete the score. It is a suggestion, never a booking guarantee. |
-| **Smart Search** | Local phrase rules create a Zod-validated query. The query filters database-backed events; the existing recommendation engine ranks them. For a free-time window, the existing weighted interval scheduler selects a compatible plan. |
+| **Smart Search** | With an API key, AI converts a phrase into Zod-validated filters only. Without a key or on provider failure, local phrase rules do the same. The server reads stored events and applies the filters; the existing recommendation engine ranks them. For a free-time window, the existing weighted interval scheduler selects a compatible plan. The model never supplies event results. |
 | **Event Pressure** | Hourly score combines event count (up to 35), pairwise audience-tag similarity (up to 20), category concentration (15), estimated audience (15), and fraction of listed venues occupied (15). Empty hours score zero. Click a cell for contributing events and reasons. |
 | **Event Readiness** | Field completeness: title 10, date 15, valid time range 15, venue 15, useful description 10, category 10, tags 10, deadline 5, organizer 5, estimated audience 5. Missing optional details lower the score but never block publication. |
 | **Recommendation** | Interest match 45, category 20, suitable time 15, demo popularity 10, organizer affinity 10. The score is bounded to 0–100 and includes reasons. |
@@ -195,7 +196,7 @@ These are deterministic decision aids, not predictions of actual attendance, off
 
 ## AI usage
 
-OpenAI, when configured, converts a user-supplied poster or announcement into a proposed structured draft. It does not invent events, publish automatically, book rooms, or calculate conflict and recommendation scores. Without credentials, text parsing is offline and poster input requires manual entry. The live AI path has not been evaluated with real credentials; see [evaluation limits](docs/evaluation.md).
+OpenAI, when configured, converts a user-supplied poster or announcement into a proposed structured draft and interprets Smart Search text as filters. It does not invent event results, publish automatically, book rooms, or calculate conflict and recommendation scores. Without credentials, text parsing and Smart Search interpretation use local rules; poster input requires manual entry. The live AI paths have not been evaluated with real credentials; see [evaluation limits](docs/evaluation.md).
 
 ## Evaluation
 
@@ -237,7 +238,7 @@ npm run build
 npm audit --audit-level=moderate
 ```
 
-At the finalist checkpoint, 31 unit tests, ESLint, TypeScript, production build, and the offline evaluation passed. Re-run the commands above in your environment; the optional live OpenAI path remains unverified without credentials.
+At the latest local checkpoint, 34 unit tests, ESLint, TypeScript, production build, and the offline evaluation passed. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials.
 
 ## Source map
 

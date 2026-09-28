@@ -45,6 +45,8 @@ describe("event pressure", () => {
     const unrelated = measureEventPressure(base.date, 18, [event("a"), event("c", { venue: "LH2", category: "Sports", tags: ["Football"] })]);
     expect(related.score).toBeGreaterThan(unrelated.score);
     expect(related.categoryCounts[0].count).toBe(2);
+    expect(related.audienceOverlapPairs).toBe(1);
+    expect(related.venueCollisions).toBe(0);
   });
 });
 

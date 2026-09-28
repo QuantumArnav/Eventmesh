@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { addDays, minutes } from "./dates";
 import { recommend } from "./recommendation-engine";
-import type { EventData, StudentData } from "./types";
+import { CATEGORIES, type EventData, type StudentData } from "./types";
 
 export const smartQuerySchema = z.object({
-  categories: z.array(z.string()).max(6),
+  categories: z.array(z.enum(CATEGORIES)).max(6),
   tags: z.array(z.string()).max(12),
   dateFrom: z.iso.date().nullable(),
   dateTo: z.iso.date().nullable(),
@@ -40,8 +40,9 @@ export function parseSmartQuery(text: string, today: string): SmartQuery {
   const tags = ["AI", "Programming", "Robotics", "Music", "Football", "Design", "Startups", "Astronomy", "Cybersecurity", "Machine Learning"].filter((value) => lower.includes(value.toLowerCase()));
   const after = lower.match(/\b(?:after|from)\s+(\d{1,2})(?::([0-5]\d))?\s*(am|pm)\b/);
   const before = lower.match(/\b(?:before|to|until)\s+(\d{1,2})(?::([0-5]\d))?\s*(am|pm)\b/);
-  const hours = lower.match(/\b(\d+)\s+hours?\s+free\b|\b(\d+)\s+hours?\b/);
-  const maxDuration = hours ? Number(hours[1] ?? hours[2]) * 60 : null;
+  const hours = lower.match(/\b(\d+|one|two|three|four|five|six)\s+hours?\b/);
+  const hourWords: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
+  const maxDuration = hours ? (hourWords[hours[1]] ?? Number(hours[1])) * 60 : null;
   let afterTime = after ? parseClock(after[1], after[2], after[3]) : null;
   let beforeTime = before ? parseClock(before[1], before[2], before[3]) : null;
   if (/\btonight\b/.test(lower) && !afterTime) afterTime = "18:00";

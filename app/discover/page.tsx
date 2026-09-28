@@ -33,7 +33,7 @@ export default function Discover() {
 
   return <div className="page-wrap">
     <div className="page-header"><div><div className="section-kicker"><Sparkles size={15} /> PERSONALIZED DISCOVERY</div><h1 className="page-title">Find your next thing.</h1><p className="page-subtitle">Events from across campus, organized around what matters to you.</p></div><Link href="/my-schedule" className="button button-secondary">View my schedule <ArrowRight size={16} /></Link></div>
-    {!loading && !error && <SmartSearch events={events} student={student} savedIds={savedEventIds} />}
+    {!loading && !error && <SmartSearch student={student} savedIds={savedEventIds} />}
     <div className="toolbar"><label className="search-wrap"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search events, clubs, tags, venues…" aria-label="Search events" /></label><SlidersHorizontal size={17} color="#7891a8" /></div>
     <div className="filter-row" role="group" aria-label="Filter events">{filters.map((value) => <button type="button" className={`filter-button ${filter === value ? "active" : ""}`} key={value} onClick={() => setFilter(value)}>{value}</button>)}</div>
     <div style={{ marginTop: 28 }}><div className="section-heading" style={{ margin: "0 0 16px" }}><div><span className="mini-label">CURATED FOR YOU</span><h2>{filter === "All" ? "On your radar" : filter + " events"}</h2></div><p>Recommendations use your demo interests and a transparent weighted score.</p></div></div>

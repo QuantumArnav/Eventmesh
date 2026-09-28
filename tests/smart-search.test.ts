@@ -12,6 +12,13 @@ describe("Smart Search", () => {
     expect(query.afterTime).toBe("18:00");
     expect(query.tags).toEqual(["AI", "Programming"]);
   });
+  it("understands a free-time window and a written duration", () => {
+    const window = parseSmartQuery("I am free from 6 PM to 9 PM", today);
+    expect(window.afterTime).toBe("18:00");
+    expect(window.beforeTime).toBe("21:00");
+    expect(window.avoidScheduleConflicts).toBe(true);
+    expect(parseSmartQuery("I have two hours free tonight", today).maxDuration).toBe(120);
+  });
   it("returns only events from the supplied database rows", () => {
     const rows = [event("one", "AI Lab", "2026-09-28", "18:30", "19:30", ["AI"]), event("two", "Morning coding", "2026-09-28", "10:00", "11:00", ["Programming"])];
     const results = smartSearch(parseSmartQuery("AI or programming after 6 PM tomorrow", today), rows, null, []);

@@ -4,6 +4,7 @@ import type { EventData } from "./types";
 export type PressureCell = {
   date: string; hour: number; score: number; events: EventData[];
   totalAudience: number; topTags: string[]; categoryCounts: { category: string; count: number }[];
+  venueCollisions: number; audienceOverlapPairs: number; tier: "LOW" | "MODERATE" | "BUSY" | "SATURATED";
   reasons: string[]; recommendation: string;
 };
 
@@ -27,6 +28,11 @@ export function measureEventPressure(date: string, hour: number, allEvents: Even
   const topTags = [...tags].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([tag]) => tag);
   const pairs: number[] = [];
   for (let i = 0; i < events.length; i++) for (let j = i + 1; j < events.length; j++) pairs.push(tagSimilarity(events[i], events[j]));
+  const audienceOverlapPairs = pairs.filter((value) => value >= 0.25).length;
+  let venueCollisions = 0;
+  for (let i = 0; i < events.length; i++) for (let j = i + 1; j < events.length; j++) {
+    if (events[i].venue.toLowerCase() === events[j].venue.toLowerCase()) venueCollisions++;
+  }
   const similarity = pairs.length ? pairs.reduce((sum, item) => sum + item, 0) / pairs.length : 0;
   const concentration = events.length > 1 ? Math.max(...categoryCounts.map((item) => item.count), 0) / events.length : 0;
   const knownVenues = new Set(allEvents.map((event) => event.venue.toLowerCase())).size;
@@ -36,6 +42,7 @@ export function measureEventPressure(date: string, hour: number, allEvents: Even
     Math.min(35, events.length * 12) + 20 * similarity + 15 * concentration +
     15 * Math.min(1, totalAudience / 300) + 15 * scarcity,
   )) : 0;
+  const tier = score >= 75 ? "SATURATED" : score >= 55 ? "BUSY" : score >= 30 ? "MODERATE" : "LOW";
   const reasons = events.length ? [
     `${events.length} event${events.length === 1 ? "" : "s"} active during this hour`,
     `About ${totalAudience} expected attendees across listed events`,
@@ -43,5 +50,5 @@ export function measureEventPressure(date: string, hour: number, allEvents: Even
     `${occupiedVenues} of ${knownVenues} listed venue${knownVenues === 1 ? "" : "s"} in use`,
   ].filter(Boolean) : ["No listed events during this hour"];
   const recommendation = score >= 70 ? `Busy hour${categoryCounts[0] ? ` for ${categoryCounts[0].category.toLowerCase()} events` : ""}; consider another slot.` : score >= 40 ? "Moderate campus activity; compare audience and venue before scheduling." : "Relatively open slot in the demo calendar.";
-  return { date, hour, score, events, totalAudience, topTags, categoryCounts, reasons, recommendation };
+  return { date, hour, score, events, totalAudience, topTags, categoryCounts, venueCollisions, audienceOverlapPairs, tier, reasons, recommendation };
 }
