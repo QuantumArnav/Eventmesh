@@ -25,3 +25,18 @@ jobs:
       - run: npm run evaluate
       - run: npm run build
       - run: npm audit --audit-level=moderate
+      - name: Build deployment image
+        run: docker build -t eventmesh-release .
+      - name: Smoke deployment image with persistent SQLite mount
+        run: |
+          mkdir -p "$RUNNER_TEMP/eventmesh-data"
+          docker run -d --name eventmesh-smoke -p 3300:3000 -v "$RUNNER_TEMP/eventmesh-data:/app/prisma/data" eventmesh-release
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:3300/api/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs eventmesh-smoke
+          exit 1
+      - name: Stop smoke container
+        if: always()
+        run: docker rm -f eventmesh-smoke || true
