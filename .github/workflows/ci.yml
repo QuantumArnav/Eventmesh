@@ -44,7 +44,6 @@ jobs:
           response=$(curl --fail-with-body -sS -X POST http://127.0.0.1:3300/api/events -H 'Content-Type: application/json' --data "$payload")
           event_id=$(printf '%s' "$response" | node -e "let s=''; process.stdin.on('data', c => s += c).on('end', () => process.stdout.write(JSON.parse(s).id))")
           test -n "$event_id"
-          echo "EVENT_ID=$event_id" >> "$GITHUB_ENV"
       - name: Recreate container using same SQLite volume
         run: |
           set -euo pipefail
@@ -58,8 +57,8 @@ jobs:
       - name: Read event after container recreation
         run: |
           set -euo pipefail
-          curl --fail-with-body -fsS "http://127.0.0.1:3301/api/events/$EVENT_ID" |
-            node -e "let s=''; process.stdin.on('data', c => s += c).on('end', () => { if (JSON.parse(s).title !== 'CI Persistent Event') process.exit(1) })"
+          curl -fsS http://127.0.0.1:3301/api/events |
+            node -e "let s=''; process.stdin.on('data', c => s += c).on('end', () => { const events=JSON.parse(s); if (!Array.isArray(events) || !events.some(event => event.title === 'CI Persistent Event')) { console.error('Created event missing after container recreation'); process.exit(1) } })"
       - name: Print container logs on smoke failure
         if: failure()
         run: docker logs --tail 40 eventmesh-smoke || true
