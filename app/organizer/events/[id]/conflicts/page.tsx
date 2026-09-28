@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CalendarDays, Radar } from "lucide-react";
 import { useCampus } from "@/app/providers";
 import { EmptyState, LoadingState } from "@/components/loading";
 import { analyzeConflicts, suggestSlots } from "@/lib/conflict-engine";
@@ -16,5 +15,24 @@ export default function EventConflicts() {
   if (!event) return <div className="page-wrap"><EmptyState title="Event not found" description="Try an event from the organizer dashboard." action={<Link href="/organizer" className="button button-primary">Organizer dashboard</Link>} /></div>;
   const conflicts = analyzeConflicts(event, events);
   const suggestions = suggestSlots(event, events);
-  return <div className="page-wrap"><Link href="/organizer" className="back-link"><ArrowLeft size={15} /> Organizer dashboard</Link><div className="page-header"><div><div className="section-kicker"><Radar size={15} /> CONFLICT INTELLIGENCE</div><h1 className="page-title">{event.title}</h1><p className="page-subtitle">{formatDate(event.date)} · {formatTime(event.startTime)} – {formatTime(event.endTime)} · {event.venue}</p></div><Link href={`/events/${event.id}`} className="button button-secondary">View event</Link></div><div className="dashboard-grid"><div className="panel aside-panel"><h2>Detected overlaps</h2><p className="form-intro">Calculated from event time, venue, category, tags, and expected audience. Scores are estimates from demo data.</p>{conflicts.length ? <div className="conflict-list">{conflicts.map((conflict) => <div className={`conflict-card ${conflict.kind === "VENUE" ? "venue" : ""}`} key={conflict.eventId}><div className="conflict-top"><span>{conflict.kind === "VENUE" ? "Venue conflict" : "Audience overlap"} · {conflict.severity}</span><strong>{conflict.score}/100</strong></div><h4>{conflict.eventTitle}</h4><p>{conflict.eventTime} · {conflict.eventVenue}</p><ul>{conflict.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>)}</div> : <div className="notice">No overlapping events in the demo calendar.</div>}</div><div className="panel aside-panel"><h2>Smarter time slots</h2><p className="form-intro">These options are ranked by the same conflict engine, with venue collisions avoided first.</p><div style={{ display: "grid", gap: 8 }}>{suggestions.map((slot) => <div className="slot-button" key={`${slot.date}-${slot.startTime}`}><strong><CalendarDays size={13} style={{ display: "inline", marginRight: 5 }} /> {formatDate(slot.date)}</strong><strong>{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</strong><small>{slot.score}/100 conflict score · {slot.venueCollision ? "venue busy" : "no venue collision"}</small></div>)}</div><p className="workflow-note">Published events are not editable in this hackathon MVP. Create a new event to use a different slot.</p></div></div></div>;
+  const venueConflicts = conflicts.filter((conflict) => conflict.kind === "VENUE").length;
+  const highest = conflicts[0]?.score ?? 0;
+  return <div className="page-wrap conflict-page">
+    <Link href="/organizer" className="back-link">← Organizer overview</Link>
+    <div className="page-header"><div><span className="mini-label">CONFLICT INTELLIGENCE / LOCAL CALENDAR</span><h1 className="page-title">{event.title}</h1><p className="page-subtitle">{formatDate(event.date)} · {formatTime(event.startTime)}–{formatTime(event.endTime)} · {event.venue}</p></div><Link href={`/events/${event.id}`} className="button button-secondary">View event →</Link></div>
+    <div className="conflict-summary"><div><span>OVERLAPPING EVENTS</span><strong>{conflicts.length}</strong></div><div><span>VENUE COLLISIONS</span><strong>{venueConflicts}</strong></div><div><span>HIGHEST RISK</span><strong>{highest}<small>/100</small></strong></div></div>
+    <div className="conflict-workspace">
+      <section className="conflict-report"><div className="report-heading"><div><span className="mini-label">THE EVIDENCE</span><h2>Detected overlaps</h2></div><p>Scores use listed event times, venues, categories, and audience tags.</p></div>
+        {conflicts.length ? <div>{conflicts.map((conflict, index) => <article className="conflict-report-row" key={conflict.eventId}>
+          <div className="conflict-report-index">{String(index + 1).padStart(2, "0")}</div>
+          <div><span className={`conflict-kind ${conflict.kind === "VENUE" ? "critical" : ""}`}>{conflict.kind === "VENUE" ? "VENUE COLLISION" : "AUDIENCE OVERLAP"} / {conflict.severity}</span><h3>{conflict.eventTitle}</h3><p>{conflict.eventTime} · {conflict.eventVenue}</p><ul>{conflict.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></div>
+          <strong>{conflict.score}<small>/100</small></strong>
+        </article>)}</div> : <p className="report-empty">No overlapping event appears in the local calendar.</p>}
+      </section>
+      <aside className="conflict-alternatives"><span className="mini-label">OPTIONS</span><h2>Lower-conflict times</h2><p>Ranked by the same conflict engine. A lower conflict score is better; venue collisions are avoided first.</p>
+        <ol>{suggestions.map((slot, index) => <li key={`${slot.date}-${slot.startTime}`}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{formatDate(slot.date)}</strong><b>{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</b><small>{slot.venueCollision ? "Listed venue collision" : "No listed venue collision"}</small></div><strong>{slot.score}<small>/100</small></strong></li>)}</ol>
+        <p className="workflow-note">Published events are not editable in this demo. Create a new listing to use a different time.</p>
+      </aside>
+    </div>
+  </div>;
 }

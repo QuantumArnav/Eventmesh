@@ -1,36 +1,38 @@
-import Link from "next/link";
-import { ArrowRight, BrainCircuit, CalendarCheck2, CalendarClock, Compass, FileImage, Radar, ScanLine } from "lucide-react";
+"use client";
 
-const capabilities = [
-  { icon: Compass, title: "Discover", description: "Search the campus calendar, save events, and build a plan that fits your interests and time.", label: "01 / FIND" },
-  { icon: BrainCircuit, title: "Understand", description: "Turn announcements into reviewed event details and see why a listing is relevant to you.", label: "02 / EXPLAIN" },
-  { icon: Radar, title: "Coordinate", description: "Spot likely duplicates, venue collisions, and audience overlap before publishing.", label: "03 / CHECK" },
-  { icon: CalendarClock, title: "Optimize", description: "Compare lower-conflict times and suitable venues using transparent scores.", label: "04 / PLAN" },
+import Link from "next/link";
+import { useCampus } from "@/app/providers";
+import { formatDate, formatTime, todayInIsth } from "@/lib/dates";
+
+const themes = [
+  { label: "Discover", description: "Find events across campus in one readable calendar." },
+  { label: "Coordinate", description: "See room and audience conflicts before an event goes live." },
+  { label: "Optimize", description: "Compare time slots and venues with reasons attached." },
 ];
 
 export default function Home() {
+  const { events, loading } = useCampus();
+  const upcoming = events.filter((event) => event.date >= todayInIsth()).sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)).slice(0, 4);
   return <div className="page-wrap landing-page">
-    <div className="eyebrow"><span className="eyebrow-dot" /> THE CAMPUS EVENT NETWORK</div>
-    <section className="landing-hero">
-      <div className="landing-copy">
-        <h1>Everything happening at IITH.<br /><em>Without the noise.</em></h1>
-        <p>EventMesh turns fragmented campus announcements into an intelligent event network — helping students discover what matters and organizers schedule without conflicts.</p>
-        <div className="hero-actions"><Link href="/discover" className="button button-primary">Explore Events <ArrowRight size={18} /></Link><Link href="/organizer/create" className="button button-secondary">Organize Smarter <ArrowRight size={18} /></Link></div>
-        <div className="hero-proof"><span>Built for campus life</span><span>•</span><Link href="/demo">See the guided demo ↗</Link></div>
+    <section className="editorial-hero">
+      <div className="editorial-hero-main">
+        <p className="mini-label">EVENTMESH / IIT HYDERABAD</p>
+        <h1>Everything<br />happening<br /><em>on campus.</em></h1>
+        <p className="editorial-hero-subtitle">Without the noise. Find events that fit your interests and your evening.</p>
+        <div className="hero-actions"><Link href="/discover" className="button button-primary">Explore events →</Link><Link href="/organizer" className="text-link">For organizers: schedule smarter →</Link></div>
       </div>
-      <div className="hero-visual" aria-label="From a poster to reviewed event intelligence, conflict detection, and smart scheduling">
-        <div className="visual-flow-heading"><span className="visual-icon"><ScanLine size={23} /></span><div><strong>From signal to schedule</strong><small>One connected organizer workflow</small></div></div>
-        <ol className="visual-flow">
-          <li><FileImage size={18} /><div><strong>Poster or announcement</strong><small>Organizer supplies a source</small></div><span>01</span></li>
-          <li><BrainCircuit size={18} /><div><strong>Event intelligence</strong><small>Extract, review, and validate details</small></div><span>02</span></li>
-          <li><Radar size={18} /><div><strong>Conflict detection</strong><small>Check venue and audience overlap</small></div><span>03</span></li>
-          <li><CalendarClock size={18} /><div><strong>Smart scheduling</strong><small>Compare lower-conflict alternatives</small></div><span>04</span></li>
-        </ol>
-        <small className="visual-flow-note">Illustrative workflow · organizer approves publication</small>
+      <div className="editorial-index" aria-label="Upcoming events in the local demo calendar">
+        <div className="editorial-index-head"><span className="mini-label">UPCOMING AT IITH</span><span>LOCAL DEMO CALENDAR</span></div>
+        {loading ? <p>Loading upcoming events…</p> : upcoming.length ? upcoming.map((event) => <Link href={`/events/${event.id}`} className="editorial-index-row" key={event.id}>
+          <span>{formatDate(event.date, { day: "numeric", month: "short" })}<strong>{formatTime(event.startTime)}</strong></span>
+          <span><strong>{event.title}</strong><small>{event.organizer} · {event.venue}</small></span><span aria-hidden="true">↗</span>
+        </Link>) : <p>No upcoming events in this local calendar.</p>}
+        <Link href="/discover" className="editorial-index-footer">View the complete event guide →</Link>
       </div>
     </section>
-    <div className="section-heading"><div><span className="mini-label">THE EVENTMESH DIFFERENCE</span><h2>More than an event calendar.</h2></div><p>From scattered announcements to one coordinated campus experience.</p></div>
-    <section className="feature-grid">{capabilities.map(({ icon: Icon, title, description, label }) => <div className="feature-card" key={title}><div className="feature-icon"><Icon size={22} /></div><h3>{title}</h3><p>{description}</p><span>{label}</span></div>)}</section>
-    <section className="landing-cta"><div><CalendarCheck2 size={28} /><h2>Make the most of what’s happening.</h2><p>Your next great campus moment is one click away.</p></div><Link href="/demo" className="button button-primary">Try guided demo <ArrowRight size={18} /></Link></section>
+    <section className="editorial-principles" aria-label="What EventMesh does">
+      {themes.map((theme, index) => <div key={theme.label}><span>0{index + 1}</span><h2>{theme.label}</h2><p>{theme.description}</p></div>)}
+    </section>
+    <div className="editorial-footer-line"><span>One campus. One connected event calendar.</span><Link href="/demo">How EventMesh works →</Link></div>
   </div>;
 }

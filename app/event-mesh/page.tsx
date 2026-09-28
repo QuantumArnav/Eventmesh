@@ -62,19 +62,19 @@ export default function EventMeshPage() {
           <div className="mesh-scroll"><div className="mesh-canvas">
             <div className="mesh-column-label organizers">ORGANIZERS</div><div className="mesh-column-label events">EVENTS</div><div className="mesh-column-label interests">CATEGORIES + INTERESTS</div>
             <svg className="mesh-lines" viewBox="0 0 1000 700" aria-hidden="true">
-              <defs><linearGradient id="mesh-line"><stop stopColor="#6cbaad" /><stop offset="1" stopColor="#6d839f" /></linearGradient></defs>
+
               {mesh.events.flatMap((event, index) => {
                 const organizerIndex = mesh.organizers.indexOf(event.organizer);
-                return organizerIndex < 0 ? [] : [<line key={`o-${event.id}`} x1="170" y1={centerY(organizerIndex, mesh.organizers.length)} x2="450" y2={centerY(index, mesh.events.length)} stroke="url(#mesh-line)" strokeWidth={activeIds.has(event.id) ? 2 : 1} opacity={activeIds.has(event.id) ? .8 : .16} />];
+                return organizerIndex < 0 ? [] : [<line key={`o-${event.id}`} x1="170" y1={centerY(organizerIndex, mesh.organizers.length)} x2="450" y2={centerY(index, mesh.events.length)} stroke="var(--mesh-organizer-line)" strokeWidth={activeIds.has(event.id) ? 2 : 1} opacity={activeIds.has(event.id) ? .8 : .16} />];
               })}
               {mesh.events.flatMap((event, index) => facets.flatMap((facet, facetIndex) => {
                 if (facet.kind === "category" ? event.category !== facet.value : !event.tags.includes(facet.value)) return [];
-                return [<line key={`${facet.kind}-${event.id}-${facet.value}`} x1="550" y1={centerY(index, mesh.events.length)} x2="800" y2={centerY(facetIndex, facets.length)} stroke={facet.kind === "category" ? "#bba5ee" : "#7ebdb2"} strokeWidth={activeIds.has(event.id) ? 2 : 1} opacity={activeIds.has(event.id) ? .8 : .13} />];
+                return [<line key={`${facet.kind}-${event.id}-${facet.value}`} x1="550" y1={centerY(index, mesh.events.length)} x2="800" y2={centerY(facetIndex, facets.length)} stroke={facet.kind === "category" ? "var(--mesh-category-line)" : "var(--mesh-tag-line)"} strokeWidth={activeIds.has(event.id) ? 2 : 1} opacity={activeIds.has(event.id) ? .8 : .13} />];
               }))}
               {mesh.audienceLinks.slice(0, 10).map((link, index) => {
                 const leftIndex = mesh.events.findIndex((event) => event.id === link.left);
                 const rightIndex = mesh.events.findIndex((event) => event.id === link.right);
-                return <path key={`${link.left}-${link.right}`} d={`M 565 ${centerY(leftIndex, mesh.events.length)} Q ${640 + index * 5} ${(centerY(leftIndex, mesh.events.length) + centerY(rightIndex, mesh.events.length)) / 2} 565 ${centerY(rightIndex, mesh.events.length)}`} fill="none" stroke="#bba5ee" strokeWidth={selected?.kind === "event" && (selected.value === link.left || selected.value === link.right) ? 2 : 1} strokeDasharray="4 5" opacity={selected?.kind === "event" && (selected.value === link.left || selected.value === link.right) ? .9 : .16} />;
+                return <path key={`${link.left}-${link.right}`} d={`M 565 ${centerY(leftIndex, mesh.events.length)} Q ${640 + index * 5} ${(centerY(leftIndex, mesh.events.length) + centerY(rightIndex, mesh.events.length)) / 2} 565 ${centerY(rightIndex, mesh.events.length)}`} fill="none" stroke="var(--mesh-audience-line)" strokeWidth={selected?.kind === "event" && (selected.value === link.left || selected.value === link.right) ? 2 : 1} strokeDasharray="4 5" opacity={selected?.kind === "event" && (selected.value === link.left || selected.value === link.right) ? .9 : .16} />;
               })}
             </svg>
             {mesh.organizers.map((organizer, index) => <button key={organizer} className={`mesh-node organizer ${selected?.kind === "organizer" && selected.value === organizer ? "selected" : ""}`} style={{ top: centerY(index, mesh.organizers.length) - 19 }} onClick={() => setFocus({ kind: "organizer", value: organizer })} title={`Show ${organizer} events`}>{organizer}</button>)}

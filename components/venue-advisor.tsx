@@ -25,8 +25,8 @@ export function VenueAdvisor({ request, events, onSelect }: { request: VenueRequ
     ? rankVenues({ ...request, projector, audioSystem, stage, accessible, preferredArea: area }, venues, events).slice(0, 3) : [],
     [request, projector, audioSystem, stage, accessible, area, venues, events]);
 
-  return <section className="venue-advisor" aria-label="Smart venue recommendations">
-    <div className="panel-heading"><div><span className="mini-label">SMART VENUE INTELLIGENCE</span><h3>Find a better fit</h3></div></div>
+  return <section className="venue-advisor" aria-label="Venue recommendations">
+    <div className="panel-heading"><div><span className="mini-label">VENUE MATCH</span><h3>Ranked rooms</h3></div></div>
     <p>Ranked against illustrative venue profiles and events in this demo calendar. Capacity, facilities and real bookings must be verified with campus staff.</p>
     <div className="venue-controls">
       <label><input type="checkbox" checked={projector} onChange={(event) => setProjector(event.target.checked)} /> Projector</label>
@@ -39,7 +39,7 @@ export function VenueAdvisor({ request, events, onSelect }: { request: VenueRequ
     {!request.date || !request.expectedAudience ? <p>Set date, time and expected audience to see ranked rooms.</p> : <div className="venue-results">{matches.map((match, index) => <article className="venue-match" key={match.venue.id}>
       <div className="venue-match-head"><strong>{index + 1}. {match.venue.name}</strong><span>{match.score}/100 match</span></div>
       <p>{match.venue.type} · about {match.venue.capacity} seats · {match.venue.area}</p>
-      <IntelligenceExplanation title="Why this venue?" reasons={match.reasons.slice(0, 3)} warnings={match.warnings.slice(0, 3)} />
+      <details className="venue-reasons" open={index === 0}><summary>Reasons and checks</summary><IntelligenceExplanation title="Why this venue?" reasons={match.reasons.slice(0, 3)} warnings={match.warnings.slice(0, 3)} /></details>
       <button className="button button-secondary button-small" type="button" onClick={() => onSelect(match.venue.name)}>Use this venue</button>
     </article>)}</div>}
   </section>;

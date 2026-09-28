@@ -8,6 +8,8 @@
 
 Campus events are scattered across posters, messages, and club channels. EventMesh gives students one place to discover and plan events, while helping organizers turn announcements into listings and avoid scheduling clashes. Its scores are calculated from visible rules and explained in the interface.
 
+The interface has two connected views: a **campus event guide** for students and a **scheduling workspace** for organizers. Start with [Discover](#working-features) to browse and save events, then use the [guided demo](#guided-demo) to see the organizer checks. The [design audit](docs/design-audit.md) and [design review](docs/design-review.md) explain the visual system and its verification.
+
 **Review path:** [Run locally](#run-locally) → [guided demo](#guided-demo) → [evaluation](#evaluation) → [algorithms](#the-intelligence-explained) → [source map](#source-map).
 
 > **Demo data:** All seeded events, venues, organizer names, popularity values, and attendance estimates are illustrative. They are not the official IIT Hyderabad calendar, venue booking system, or live campus statistics. User-created events live only in the local SQLite database.

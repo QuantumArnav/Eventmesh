@@ -29,8 +29,8 @@ export function SmartSearch({ student, savedIds }: { student: StudentData | null
     finally { setBusy(false); }
   };
   return <section className="panel smart-search" aria-label="Smart Search">
-    <div className="panel-heading"><div><span className="mini-label">ASK EVENTMESH</span><h2>Smart Search</h2></div><span className="mini-label">EVENTS FROM THIS CALENDAR ONLY</span></div>
-    <p>Describe your interests and free time. EventMesh converts the phrase into checked filters, ranks listed events, and can avoid clashes with saved events.</p>
+    <div className="panel-heading"><div><span className="mini-label">SEARCH NATURALLY</span><h2>Smart Search</h2></div><span className="mini-label">EVENTS FROM THIS CALENDAR ONLY</span></div>
+    <p>Describe a topic or time window. Results come only from the listed calendar.</p>
     <form onSubmit={(event) => { event.preventDefault(); void run(text); }} className="smart-search-form"><input value={text} onChange={(event) => setText(event.target.value)} aria-label="Ask EventMesh" placeholder="Find AI events after 6 PM tomorrow…" maxLength={200} /><button className="button button-primary" type="submit" disabled={!text.trim() || busy}>{busy ? "Searching…" : "Find events"}</button></form>
     <div className="smart-examples">{examples.map((example) => <button type="button" key={example} disabled={busy} onClick={() => void run(example)}>{example}</button>)}</div>
     {error && <div className="notice error" role="alert">{error}</div>}

@@ -2,43 +2,57 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, CalendarDays, Compass, Inbox, LayoutDashboard, Network, Plus, Radar, Sparkles } from "lucide-react";
 
-const links = [
-  { href: "/discover", label: "Discover", icon: Compass },
-  { href: "/my-schedule", label: "My Schedule", icon: CalendarDays },
-  { href: "/organizer", label: "Organizer", icon: LayoutDashboard },
-  { href: "/organizer/scheduling", label: "Scheduling", icon: Radar },
-  { href: "/demo", label: "Guided demo", icon: Sparkles },
+const studentLinks = [
+  { href: "/discover", label: "Discover" },
+  { href: "/my-schedule", label: "My Schedule" },
 ];
+
+const organizerLinks = [
+  { href: "/organizer", label: "Overview" },
+  { href: "/organizer#upcoming-events", label: "Events" },
+  { href: "/organizer/create", label: "Create event" },
+  { href: "/organizer/inbox", label: "Source inbox" },
+  { href: "/organizer/scheduling", label: "Scheduling" },
+  { href: "/organizer/create#venue-advisor", label: "Venues" },
+  { href: "/organizer/scheduling#heatmap", label: "Intelligence" },
+  { href: "/event-mesh", label: "Event Mesh" },
+  { href: "/demo", label: "Guided demo" },
+];
+const organizerMobileLinks = organizerLinks.filter(({ label }) => ["Overview", "Create event", "Source inbox", "Scheduling", "Event Mesh"].includes(label));
+
+function isActive(pathname: string, href: string) {
+  return pathname === href || (href === "/discover" && pathname.startsWith("/events/"));
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  return <div className="app-shell">
-    <aside className="sidebar">
-      <Link href="/" className="brand"><span className="brand-mark"><Sparkles size={20} strokeWidth={2.4} /></span><span>eventmesh<span className="brand-dot">.</span><small>IIT HYDERABAD</small></span></Link>
-      <div className="sidebar-label">CAMPUS NETWORK</div>
-      <nav className="sidebar-nav" aria-label="Main navigation">
-        {links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`nav-link ${pathname === href || (href === "/discover" && pathname.startsWith("/events/")) ? "active" : ""}`}><Icon size={18} />{label}</Link>)}
+  const organizer = pathname.startsWith("/organizer") || pathname === "/event-mesh" || pathname === "/demo";
+  return <div className={`app-shell ${organizer ? "organizer-surface" : "student-surface"}`}>
+    {organizer ? <aside className="sidebar organizer-sidebar">
+      <Link href="/" className="brand">EventMesh<span className="brand-dot">.</span><small>IIT HYDERABAD</small></Link>
+      <div className="sidebar-label">ORGANIZER WORKSPACE</div>
+      <nav className="sidebar-nav" aria-label="Organizer navigation">
+        {organizerLinks.map(({ href, label }) => <Link key={href} href={href} className={`nav-link ${isActive(pathname, href) ? "active" : ""}`}>{label}</Link>)}
       </nav>
-      <div className="sidebar-label organizer-label">FOR ORGANIZERS</div>
-      <Link href="/organizer/create" className={`nav-link ${pathname === "/organizer/create" ? "active" : ""}`}><Plus size={18} />Create event</Link>
-      <Link href="/organizer/inbox" className={`nav-link ${pathname === "/organizer/inbox" ? "active" : ""}`}><Inbox size={18} />Source inbox</Link>
-      <Link href="/event-mesh" className={`nav-link ${pathname === "/event-mesh" ? "active" : ""}`}><Network size={18} />Event Mesh</Link>
       <div className="sidebar-spacer" />
-      <div className="sidebar-foot">
-        <div className="live-indicator"><span /> DEMO ENVIRONMENT</div>
-        <p>Sample campus events for a working product demonstration.</p>
-        <Link href="/organizer/create">Bring your next event to life <ArrowUpRight size={15} /></Link>
-      </div>
-    </aside>
+      <Link href="/discover" className="sidebar-switch">← Student mode</Link>
+      <p className="sidebar-demo">Local demonstration data</p>
+    </aside> : null}
     <div className="main-column">
-      <header className="topbar">
-        <div className="topbar-left"><span className="topbar-pulse" /> Smart campus, better connected <span className="topbar-separator">/</span> <strong>Event intelligence</strong></div>
-        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/organizer/create" className="topbar-create"><Plus size={16} /> Create event</Link></div>
-      </header>
+      {organizer ? <header className="topbar organizer-topbar">
+        <div className="topbar-left"><span>EventMesh</span><span className="topbar-separator">/</span><strong>Organizer</strong></div>
+        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/discover" className="topbar-switch">Student mode →</Link></div>
+      </header> : <header className="topbar student-topbar">
+        <Link href="/" className="student-brand">EventMesh<span>.</span><small>IITH</small></Link>
+        <nav aria-label="Student navigation" className="student-nav">{studentLinks.map(({ href, label }) => <Link key={href} href={href} className={isActive(pathname, href) ? "active" : ""}>{label}</Link>)}</nav>
+        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/organizer" className="topbar-switch">Organizer ↗</Link></div>
+      </header>}
       <main>{children}</main>
     </div>
-    <nav className="mobile-nav" aria-label="Mobile navigation">{links.filter(({ href }) => href !== "/demo").map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={pathname === href ? "active" : ""}><Icon size={19} /><span>{label}</span></Link>)}<Link href="/organizer/create"><Plus size={19} /><span>Create</span></Link></nav>
+    <nav className="mobile-nav" aria-label="Mobile navigation">
+      {(organizer ? organizerMobileLinks : [...studentLinks, { href: "/organizer", label: "Organizer" }]).map(({ href, label }) => <Link key={href} href={href} className={isActive(pathname, href) ? "active" : ""}>{label}</Link>)}
+      {organizer && <Link href="/discover">Student</Link>}
+    </nav>
   </div>;
 }
