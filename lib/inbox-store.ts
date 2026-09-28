@@ -15,6 +15,10 @@ export async function createSource(source: { sourceType: "TEXT" | "POSTER"; labe
   return prisma.eventSource.create({ data: source, select: { id: true, status: true } });
 }
 
-export async function updateSource(id: string, status: SourceStatus, publishedEventId?: string) {
-  return prisma.eventSource.update({ where: { id }, data: { status, publishedEventId: publishedEventId ?? undefined } });
+export async function updateSource(id: string, status: SourceStatus): Promise<boolean> {
+  const updated = await prisma.eventSource.updateMany({
+    where: { id, status: { not: "PUBLISHED" } },
+    data: { status },
+  });
+  return updated.count === 1;
 }

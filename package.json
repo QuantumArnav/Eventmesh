@@ -13,6 +13,7 @@
     "evaluate": "tsx evaluation/run.ts",
     "db:migrate": "node scripts/ensure-db.mjs && prisma migrate dev",
     "db:setup": "node scripts/ensure-db.mjs && prisma generate && prisma migrate deploy && npm run db:seed",
+    "db:deploy": "node scripts/ensure-db.mjs && prisma migrate deploy && npm run db:seed",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "postinstall": "prisma generate"
@@ -26,6 +27,7 @@
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "sharp": "^0.35.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {

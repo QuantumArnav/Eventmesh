@@ -1,6 +1,22 @@
-export function validPosterBytes(bytes: Buffer, type: string): boolean {
-  if (type === "image/png") return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-  if (type === "image/jpeg") return bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-  if (type === "image/webp") return bytes.length >= 12 && bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP";
-  return false;
+import sharp from "sharp";
+
+const formats: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpeg",
+  "image/webp": "webp",
+};
+
+/** Decode the entire image: a signature alone does not make a safe poster. */
+export async function validPosterBytes(bytes: Buffer, type: string): Promise<boolean> {
+  const format = formats[type];
+  if (!format || bytes.length === 0) return false;
+  try {
+    const image = sharp(bytes, { failOn: "error", limitInputPixels: 25_000_000 });
+    const metadata = await image.metadata();
+    if (metadata.format !== format || !metadata.width || !metadata.height) return false;
+    await image.stats();
+    return true;
+  } catch {
+    return false;
+  }
 }

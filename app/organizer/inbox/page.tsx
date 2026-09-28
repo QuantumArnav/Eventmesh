@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, FileImage, Inbox, Sparkles } from "lucide-react";
+import { ArrowRight, FileImage, Inbox } from "lucide-react";
 
 type InboxRow = { id: string; sourceType: "TEXT" | "POSTER"; label: string; status: string; publishedEventId: string | null; createdAt: string };
 
@@ -39,7 +39,7 @@ export default function OrganizerInbox() {
   };
   return <div className="page-wrap"><div className="page-header"><div><div className="section-kicker"><Inbox size={15} /> EVENT SOURCE INBOX</div><h1 className="page-title">From signal to listing.</h1><p className="page-subtitle">Stage a poster or announcement, review the draft, then decide whether it is ready to publish.</p></div><Link href="/organizer/create" className="button button-secondary">Create manually <ArrowRight size={16} /></Link></div>
     <div className="notice">Sources stay in the local demo database. Poster images are stored locally for review; this is not a connected campus feed.</div>
-    <div className="inbox-grid"><section className="panel inbox-panel"><div className="section-kicker"><Sparkles size={15} /> TEXT ANNOUNCEMENT</div><h2>Paste a message</h2><textarea aria-label="Announcement to stage" value={text} onChange={(event) => setText(event.target.value)} placeholder="Lambda Club is hosting an AI workshop on 29 September 2026 from 6 PM to 7:30 PM in LH3..." maxLength={5000} /><button type="button" className="button button-primary" disabled={busy || text.trim().length < 15} onClick={() => void stage("TEXT")}>Stage announcement</button></section>
+    <div className="inbox-grid"><section className="panel inbox-panel"><div className="section-kicker">TEXT ANNOUNCEMENT</div><h2>Paste a message</h2><textarea aria-label="Announcement to stage" value={text} onChange={(event) => setText(event.target.value)} placeholder="Lambda Club is hosting an AI workshop on 29 September 2026 from 6 PM to 7:30 PM in LH3..." maxLength={5000} /><button type="button" className="button button-primary" disabled={busy || text.trim().length < 15} onClick={() => void stage("TEXT")}>Stage announcement</button></section>
       <section className="panel inbox-panel"><div className="section-kicker"><FileImage size={15} /> POSTER IMAGE</div><h2>Stage a poster</h2><p>PNG, JPEG or WebP · maximum 5 MB. If vision extraction is unavailable, the source waits for manual entry.</p><input aria-label="Poster to stage" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setPoster(event.target.files?.[0] ?? null)} /><button type="button" className="button button-primary" disabled={busy || !poster} onClick={() => void stage("POSTER")}>Stage poster</button></section></div>
     {error && <div className="notice error" role="alert">{error} <button type="button" className="button button-secondary button-small" onClick={() => void refresh().catch(() => setError("Could not load inbox."))}>Retry</button></div>}
     {info && <div className="notice" role="status">{info}</div>}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Radar, Sparkles } from "lucide-react";
+import { ArrowRight, Radar } from "lucide-react";
 import { useCampus } from "@/app/providers";
 import { LoadingState } from "@/components/loading";
 import { IntelligenceExplanation } from "@/components/intelligence-explanation";
@@ -22,7 +22,7 @@ export default function Demo() {
     const candidate: EventInput = { title: "Lambda AI Workshop: Agents", organizer: "Lambda Club", description: "Hands-on AI agents workshop for the campus technical community.", date, startTime: "18:00", endTime: "19:30", venue: "LH3", category: "Workshop", tags: ["AI", "Programming", "Machine Learning"], registrationDeadline: addDays(date, -1), expectedAudience: 80 };
     return { candidate, conflicts: analyzeConflicts(candidate, events), duplicates: detectDuplicates(candidate, events), slots: suggestSlots(candidate, events), matches: rankVenues({ date, startTime: candidate.startTime, endTime: candidate.endTime, expectedAudience: 80, category: "Workshop", projector: true, audioSystem: true, preferredArea: "Academic zone" }, venues, events) };
   }, [events, venues]);
-  return <div className="page-wrap demo-page"><div className="page-header"><div><div className="section-kicker"><Sparkles size={15} /> GUIDED PRODUCT DEMO</div><h1 className="page-title">One event. Every signal.</h1><p className="page-subtitle">A reproducible organizer scenario calculated from the local demo calendar and illustrative venue profiles.</p></div><Link href="/organizer/create" className="button button-primary">Try event creation <ArrowRight size={16} /></Link></div>
+  return <div className="page-wrap demo-page"><div className="page-header"><div><div className="section-kicker">GUIDED PRODUCT DEMO</div><h1 className="page-title">One event. Every signal.</h1><p className="page-subtitle">A reproducible organizer scenario calculated from the local demo calendar and illustrative venue profiles.</p></div><Link href="/organizer/create" className="button button-primary">Try event creation <ArrowRight size={16} /></Link></div>
     <div className="notice">Current demonstration uses seeded campus-style event and venue data. These are not official IITH listings or booking records.</div>
     {error && <div className="notice error">{error} <button className="button button-secondary button-small" onClick={() => void refresh()}>Retry</button></div>}
     {loading ? <LoadingState /> : <><section className="panel demo-scenario"><span className="mini-label">PROPOSED SUBMISSION</span><h2>{scenario.candidate.title}</h2><p>{formatDate(scenario.candidate.date)} · {formatTime(scenario.candidate.startTime)}–{formatTime(scenario.candidate.endTime)} · {scenario.candidate.venue} · {scenario.candidate.expectedAudience} expected students</p><p>Lambda Club · AI, Programming, Machine Learning</p></section>

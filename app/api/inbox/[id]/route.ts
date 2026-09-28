@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { getSource, SOURCE_STATUSES, updateSource } from "@/lib/inbox-store";
 
 export const runtime = "nodejs";
@@ -20,10 +19,9 @@ export async function PATCH(request: Request, { params }: Context) {
     const source = await getSource(id);
     if (!source) return NextResponse.json({ error: "Source not found." }, { status: 404 });
     if (source.status === "PUBLISHED") return NextResponse.json({ error: "Published sources cannot return to review." }, { status: 409 });
-    const updated = await updateSource(id, body.status);
-    return NextResponse.json({ id: updated.id, status: updated.status });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") return NextResponse.json({ error: "Source not found." }, { status: 404 });
+    if (!(await updateSource(id, body.status))) return NextResponse.json({ error: "This source was published while you were reviewing it." }, { status: 409 });
+    return NextResponse.json({ id, status: body.status });
+  } catch {
     return NextResponse.json({ error: "Could not update source." }, { status: 500 });
   }
 }
