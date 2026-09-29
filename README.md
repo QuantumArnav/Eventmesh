@@ -125,12 +125,12 @@ Create `.env` from `.env.example`:
 
 ```powershell
 # Windows PowerShell
-Copy-Item .env.example .env
+Copy-Item .env.example .env.local
 ```
 
 ```bash
 # macOS / Linux
-cp .env.example .env
+cp .env.example .env.local
 ```
 
 Start the local database and app:
@@ -142,7 +142,7 @@ npm run dev
 
 Open **http://localhost:3000**. `db:setup` creates SQLite, applies six committed migrations, and inserts 19 relative demo events, three announcement-based static demo events, seven illustrative venue profiles, a separate demo student profile, and a six-event demo plan. It is safe to rerun: existing events and choices remain, and missing venue links are backfilled. If port 3000 is busy, use the URL printed by Next.js.
 
-The local database is `prisma/dev.db`; it and `.env` are Git-ignored. To use a different SQLite file, change `DATABASE_URL` in `.env` before setup.
+The local database is prisma/dev.db; it and .env.local are Git-ignored. To use a different SQLite file, change `DATABASE_URL` in `.env` before setup.
 
 ### Environment variables
 
@@ -163,7 +163,7 @@ The key stays on the server and is not exposed as `NEXT_PUBLIC_`. Without a key,
 
 The public home page, Discover, event details, organizer intelligence views, and `/demo` work without sign-in. Visitors can save events, set priorities, view My Schedule, and build a general non-overlapping plan in the same browser without Google credentials. Guest choices stay in local storage for that site origin; they do not sync across devices, move to new demo URLs, or merge into an account. Clearing browser data removes them. Authenticated schedules and personalized recommendations use each student's own database profile. New accounts start as `STUDENT`; the Account page lets users choose interests. The seeded `demo-student` remains separate and is used only to construct deterministic demo data.
 
-Google sign-in uses Auth.js with database sessions and the Prisma adapter. To enable it, create a Google OAuth web client, register `http://localhost:3000/api/auth/callback/google` for local use (and the matching HTTPS callback on your deployed host), then set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in `.env.local` or deployment secrets. Set `AUTH_URL` to the public origin if a proxy makes callback URLs point at an internal host; use `AUTH_TRUST_HOST=true` only behind a trusted proxy when needed. Restart the server after setting them. **LIVE GOOGLE AUTH: Google OAuth has been live-tested locally using a configured Google OAuth web client. The local callback flow at http://localhost:3000/api/auth/callback/google works with approved test users. Production OAuth remains unverified until a public deployment URL and HTTPS callback are configured.
+Google sign-in uses Auth.js with database sessions and the Prisma adapter. To enable it, create a Google OAuth web client, register `http://localhost:3000/api/auth/callback/google` for local use (and the matching HTTPS callback on your deployed host), then set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in `.env.local` or deployment secrets. Set `AUTH_URL` to the public origin if a proxy makes callback URLs point at an internal host; use `AUTH_TRUST_HOST=true` only behind a trusted proxy when needed. Restart the server after setting them. **LIVE GOOGLE AUTH:** Google OAuth has been live-tested locally using a configured Google OAuth web client. The local callback flow at `http://localhost:3000/api/auth/callback/google` works with approved test users. Production OAuth remains unverified until a public deployment URL and HTTPS callback are configured. The local callback flow at http://localhost:3000/api/auth/callback/google works with approved test users. Production OAuth remains unverified until a public deployment URL and HTTPS callback are configured.
 Source inbox, extraction, and event publishing require `ORGANIZER` or `ADMIN`. After a trusted organizer signs in once, a local database operator can grant access with `npm run auth:grant-organizer -- organizer@example.com`. No user can promote their own role in the UI. The project does not assume an IIT Hyderabad email-domain policy; decide and enforce that policy server-side before campus deployment. SQLite sessions and user data require a persistent database volume in deployment.
 
 ## Three-minute judge walkthrough
@@ -275,7 +275,7 @@ npm audit --audit-level=moderate
 
 For repeatable account checks, create a disposable `prisma/auth-qa.db`, migrate and seed it with `DATABASE_URL=file:./auth-qa.db`, then run `npm run auth:verify-isolation`. The HTTP session check is `npm run auth:verify-http` against a local server on port 3001 using that same disposable database and temporary test-only auth environment values. These scripts refuse to run against the normal database.
 
-At the 29 September account checkpoint, 45 tests, ESLint, TypeScript, a production build, the offline evaluation, database setup, and the two-user account isolation check passed. A local HTTP session check covered guest rejection, student and organizer roles, cross-site mutation rejection, and separate profiles. Four tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; Google OAuth has been verified locally with a real Google test-user flow. Production OAuth and the optional live OpenAI paths remain unverified. without credentials. `npm audit --audit-level=moderate` reported zero vulnerabilities.
+At the 29 September account checkpoint, 45 tests, ESLint, TypeScript, a production build, the offline evaluation, database setup, and the two-user account isolation check passed. A local HTTP session check covered guest rejection, student and organizer roles, cross-site mutation rejection, and separate profiles. Four tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; Google OAuth has been verified locally with a real Google test-user flow. Production OAuth and the optional live OpenAI paths remain unverified. `npm audit --audit-level=moderate` reported zero vulnerabilities.
 
 ## Deployment
 
