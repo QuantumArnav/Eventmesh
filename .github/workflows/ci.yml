@@ -31,7 +31,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/eventmesh-data"
-          docker run -d --name eventmesh-smoke -p 3300:3000 -v "$RUNNER_TEMP/eventmesh-data:/app/prisma/data" eventmesh-release
+          docker run -d --name eventmesh-smoke -p 3300:3000 -v "$RUNNER_TEMP/eventmesh-data:/app/prisma/data" \
+            -e CI=true -e AUTH_TRUST_HOST=true -e AUTH_SECRET="$(openssl rand -hex 32)" \
+            -e AUTH_GOOGLE_ID=ci-placeholder -e AUTH_GOOGLE_SECRET=ci-placeholder \
+            eventmesh-release
           for attempt in {1..30}; do
             if curl -fsS http://127.0.0.1:3300/api/health > /dev/null 2>&1; then break; fi
             sleep 2
@@ -41,7 +44,11 @@ jobs:
         run: |
           set -euo pipefail
           payload='{"event":{"title":"CI Persistent Event","organizer":"Release CI","description":"Checks data survives a fresh container with the same volume.","date":"2030-01-01","startTime":"10:00","endTime":"11:00","venue":"CI Test Room","category":"Technical","tags":["CI"],"registrationDeadline":null,"expectedAudience":20}}'
-          response=$(curl --fail-with-body -sS -X POST http://127.0.0.1:3300/api/events -H 'Content-Type: application/json' --data "$payload")
+          test "$(curl -sS -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3300/api/events -H 'Content-Type: application/json' --data "$payload")" = 401
+          session_token=$(docker exec eventmesh-smoke ./node_modules/.bin/tsx scripts/create-ci-smoke-session.ts)
+          response=$(curl --fail-with-body -sS -X POST http://127.0.0.1:3300/api/events \
+            -H 'Content-Type: application/json' -H "Cookie: authjs.session-token=$session_token" \
+            -H 'Origin: http://127.0.0.1:3300' --data "$payload")
           event_id=$(printf '%s' "$response" | node -e "let s=''; process.stdin.on('data', c => s += c).on('end', () => process.stdout.write(JSON.parse(s).id))")
           test -n "$event_id"
       - name: Recreate container using same SQLite volume
