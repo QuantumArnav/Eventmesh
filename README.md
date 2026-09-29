@@ -81,10 +81,10 @@ These are intended benefits. The demo uses synthetic records, so it does not cla
 ### Student experience
 
 - Search by title, organizer, category, tag, or venue; filter by date and category.
-- **Smart Search** interprets phrases such as “AI or programming after 6 PM tomorrow” into validated category, tag, date, time, duration, and saved-schedule constraints. It only returns events already in the local database. A free-time query can produce a weighted, non-overlapping plan.
+- **Smart Search** interprets phrases such as “AI or programming after 6 PM tomorrow” into validated category, tag, date, time, duration, and saved-schedule constraints. It only returns events already in the local database. Signed-out schedule-clash queries use local rules against this browser's saved events. A signed-in free-time query can produce a weighted, non-overlapping plan.
 - Explainable 0–100 recommendations using each signed-in student's interests, category preferences, time, popularity, and organizer affinity.
 - Event details, related events, registration deadlines, and saved-event clash warnings.
-- Interested, Saved, and Must Attend priorities persisted separately for each signed-in student in SQLite.
+- Interested, Saved, and Must Attend priorities persist separately for each signed-in student in SQLite. Without sign-in, event saves and priorities persist in this browser's local storage on the same site origin.
 - **Build My Plan:** weighted interval scheduling selects the highest-utility set of non-overlapping events and explains skipped events.
 - Export one event or the current schedule/optimized plan as a local `.ics` calendar file.
 
@@ -161,9 +161,9 @@ The key stays on the server and is not exposed as `NEXT_PUBLIC_`. Without a key,
 
 ### Accounts and access
 
-The public home page, Discover, event details, organizer intelligence views, and `/demo` work without sign-in. My Schedule, saving, priorities, and personalized recommendations use each authenticated student's own profile. New accounts start as `STUDENT`; the Account page lets users choose interests. The seeded `demo-student` remains separate and is used only to construct deterministic demo data.
+The public home page, Discover, event details, organizer intelligence views, and `/demo` work without sign-in. Visitors can save events, set priorities, view My Schedule, and build a general non-overlapping plan in the same browser without Google credentials. Guest choices stay in local storage for that site origin; they do not sync across devices, move to new demo URLs, or merge into an account. Clearing browser data removes them. Authenticated schedules and personalized recommendations use each student's own database profile. New accounts start as `STUDENT`; the Account page lets users choose interests. The seeded `demo-student` remains separate and is used only to construct deterministic demo data.
 
-Google sign-in uses Auth.js with database sessions and the Prisma adapter. To enable it, create a Google OAuth web client, register `http://localhost:3000/api/auth/callback/google` for local use (and the matching HTTPS callback on your deployed host), then set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in `.env.local` or deployment secrets. Set `AUTH_URL` to the public origin if a proxy makes callback URLs point at an internal host; use `AUTH_TRUST_HOST=true` only behind a trusted proxy when needed. Restart the server after setting them. **LIVE GOOGLE AUTH: NOT VERIFIED — CREDENTIALS REQUIRED.** Without these values, browsing and `/demo` work, while the login page explains that sign-in is unavailable.
+Google sign-in uses Auth.js with database sessions and the Prisma adapter. To enable it, create a Google OAuth web client, register `http://localhost:3000/api/auth/callback/google` for local use (and the matching HTTPS callback on your deployed host), then set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in `.env.local` or deployment secrets. Set `AUTH_URL` to the public origin if a proxy makes callback URLs point at an internal host; use `AUTH_TRUST_HOST=true` only behind a trusted proxy when needed. Restart the server after setting them. **LIVE GOOGLE AUTH: NOT VERIFIED — CREDENTIALS REQUIRED.** Without these values, account sign-in is unavailable, while device-local event saving still works.
 
 Source inbox, extraction, and event publishing require `ORGANIZER` or `ADMIN`. After a trusted organizer signs in once, a local database operator can grant access with `npm run auth:grant-organizer -- organizer@example.com`. No user can promote their own role in the UI. The project does not assume an IIT Hyderabad email-domain policy; decide and enforce that policy server-side before campus deployment. SQLite sessions and user data require a persistent database volume in deployment.
 
@@ -171,7 +171,7 @@ Source inbox, extraction, and event publishing require `ORGANIZER` or `ADMIN`. A
 
 1. **Start with a calculated scenario.** Open `/demo`. Read the duplicate, venue collision, audience overlap, better slot, and venue match; all come from seeded records through the same production engines.
 2. **Find a reason to attend.** Open `/discover`, try “AI or programming after 6 PM tomorrow” in Smart Search, then open an event. The structured filters are inspectable.
-3. **Resolve a scheduling clash without credentials.** Open `/demo` and inspect the proposed Lambda workshop, collision, alternatives, and explanations. A signed-in student can save events in `/discover`, set priorities in `/my-schedule`, and click **Build my plan**.
+3. **Resolve a scheduling clash without credentials.** Open `/demo` and inspect the proposed Lambda workshop, collision, alternatives, and explanations. Save events in `/discover`, set priorities in `/my-schedule`, and click **Build my plan**; without sign-in, those choices remain in this browser.
 4. **Show the coordination problem.** On `/demo`, review venue ranking and the duplicate and conflict signals. The seeded scenario finds a possible duplicate, an LH3 collision, and programming-audience overlap.
 5. **Optional organizer account.** In `/organizer/create`, select **Paste announcement**, click **Use demo announcement**, then **Extract details**. Without an OpenAI key, the UI labels the local text parser. Review and edit fields before publishing. This step requires a configured Google login and an organizer role.
 6. **Find a better slot.** Open `/organizer/scheduling`. Compare ranked slots and inspect a busy heatmap cell.
@@ -305,7 +305,7 @@ The screenshots above show the current UI; the diagram shows the data flow for a
 
 ## Limits and next steps
 
-The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided by an organizer. Poster bytes and raw announcement text are stored in SQLite when staged in the role-protected inbox; there is no retention policy, so use disposable content for demos. It does not reserve official venues. Google OAuth has been implemented but not tested against a live Google client. A campus deployment still needs a reviewed email-domain policy, verified organizer approval, official venue feeds, consent-aware data handling, and retention rules. Optional ideas from the initial brief such as a separate calendar page and light mode were not implemented; the working scheduling heatmap and timeline cover the core use cases.
+The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided by an organizer. Poster bytes and raw announcement text are stored in SQLite when staged in the role-protected inbox; there is no retention policy, so use disposable content for demos. It does not reserve official venues. Google OAuth has been implemented but not tested against a live Google client. A campus deployment still needs a reviewed email-domain policy, verified organizer approval, official venue feeds, consent-aware data handling, and retention rules. A separate calendar page was not implemented; the working scheduling heatmap and timeline cover the core use cases. Light, Dark, and System themes are available.
 
 ## Data disclaimer
 

@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { EventData, StudentData } from "@/lib/types";
 import type { Preference } from "@/lib/schedule-optimizer";
+import { GUEST_SCHEDULE_KEY, loadGuestSchedule, saveGuestSchedule } from "@/lib/guest-schedule";
 
 type CampusContext = {
   events: EventData[];
@@ -27,7 +27,6 @@ async function jsonOrThrow(response: Response) {
 }
 
 export function CampusProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
   const [account, setAccount] = useState<CampusContext["account"]>(null);
   const [student, setStudent] = useState<StudentData | null>(null);
@@ -45,7 +44,8 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
       ]);
       setEvents(eventData);
       if (profileResponse.status === 401) {
-        setAccount(null); setStudent(null); setSavedEventIds([]); setPreferences({});
+        const guest = loadGuestSchedule();
+        setAccount(null); setStudent(null); setSavedEventIds(Object.keys(guest)); setPreferences(guest);
       } else {
         const profileData = await jsonOrThrow(profileResponse);
         setAccount(profileData.account);
@@ -60,8 +60,30 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { const timer = setTimeout(() => void refresh(), 0); return () => clearTimeout(timer); }, [refresh]);
 
+  useEffect(() => {
+    const syncGuestSchedule = (event: StorageEvent) => {
+      if (account || (event.key !== GUEST_SCHEDULE_KEY && event.key !== null)) return;
+      const guest = loadGuestSchedule();
+      setSavedEventIds(Object.keys(guest));
+      setPreferences(guest);
+    };
+    window.addEventListener("storage", syncGuestSchedule);
+    return () => window.removeEventListener("storage", syncGuestSchedule);
+  }, [account]);
+
   const toggleSaved = async (id: string) => {
-    if (!account) { router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`); return; }
+    if (!account) {
+      const next = { ...preferences };
+      if (savedEventIds.includes(id)) delete next[id]; else next[id] = "SAVED";
+      if (!saveGuestSchedule(next)) {
+        setError("Browser storage is unavailable, so this event could not be saved on this device.");
+        return;
+      }
+      setSavedEventIds(Object.keys(next));
+      setPreferences(next);
+      setError(null);
+      return;
+    }
     const wasSaved = savedEventIds.includes(id);
     setSavedEventIds((current) => wasSaved ? current.filter((value) => value !== id) : [...current, id]);
     try {
@@ -81,7 +103,17 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setPreference = async (id: string, preference: Preference) => {
-    if (!account) { router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`); return; }
+    if (!account) {
+      const next = { ...preferences, [id]: preference };
+      if (!saveGuestSchedule(next)) {
+        setError("Browser storage is unavailable, so this priority could not be saved on this device.");
+        return;
+      }
+      setPreferences(next);
+      setSavedEventIds(Object.keys(next));
+      setError(null);
+      return;
+    }
     const old = preferences;
     setPreferences((current) => ({ ...current, [id]: preference }));
     try {

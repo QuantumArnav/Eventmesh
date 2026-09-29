@@ -20,7 +20,7 @@ Render's ordinary filesystem is ephemeral. Use a paid service with a persistent 
 
 ## Security boundary for a public demo
 
-The public guide and deterministic `/demo` need no account. Personal schedules use database-backed Auth.js sessions, and organizer intake and publishing check roles server-side. The Google login flow has not been tested with live credentials; verify it before claiming a production login. The seeded demo profile stays separate from authenticated profiles. Use disposable posters and announcements because inbox content is stored in SQLite without a retention or moderation system. No IIT Hyderabad email-domain restriction is assumed; define and enforce that policy if campus deployment requires it.
+The public guide and deterministic `/demo` need no account. Signed-out visitors can keep a device-local schedule in browser storage; it does not sync across browsers or different demo URLs. Account schedules use database-backed Auth.js sessions, and organizer intake and publishing check roles server-side. The Google login flow has not been tested with live credentials; verify it before claiming a production login. The seeded demo profile stays separate from authenticated profiles. Use disposable posters and announcements because inbox content is stored in SQLite without a retention or moderation system. No IIT Hyderabad email-domain restriction is assumed; define and enforce that policy if campus deployment requires it.
 
 ## Current deployment status
 

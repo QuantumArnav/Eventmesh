@@ -37,7 +37,7 @@ export default function Discover() {
     <div className="discover-header"><div><span className="mini-label">THE CAMPUS EVENT GUIDE / {formatDate(today, { weekday: "long", month: "long" }).toUpperCase()}</span><h1>What’s happening<br />at IITH?</h1><p>Find an event for tonight, the weekend, or the hour you have free.</p></div><Link href="/my-schedule" className="text-link">My schedule →</Link></div>
     {!loading && account && student?.interests.length === 0 && <div className="notice">Make Discover yours: <Link href="/account">choose your interests →</Link></div>}
     {error && <div className="notice error" role="alert">{error} <button type="button" className="button button-small button-secondary" onClick={() => void refresh()}>Retry</button></div>}
-    {!loading && !error && <SmartSearch student={student} savedIds={savedEventIds} />}
+    {!loading && !error && <SmartSearch student={student} savedIds={savedEventIds} events={events} />}
     <section className="discover-browser" aria-label="Browse events">
       <div className="discover-controls"><label className="search-wrap"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search events, clubs, venues…" aria-label="Search events" /></label><span>{filtered.length} of {events.length} listings</span></div>
       <div className="filter-row" role="group" aria-label="Filter events">{filters.map((value) => <button type="button" className={`filter-button ${filter === value ? "active" : ""}`} key={value} onClick={() => setFilter(value)}>{value}</button>)}</div>

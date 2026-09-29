@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatDate, formatTime } from "@/lib/dates";
-import type { SmartQuery, SmartResult } from "@/lib/smart-search";
-import type { StudentData } from "@/lib/types";
+import { formatDate, formatTime, todayInIsth } from "@/lib/dates";
+import { parseSmartQuery, smartSearch, type SmartQuery, type SmartResult } from "@/lib/smart-search";
+import type { EventData, StudentData } from "@/lib/types";
 import { optimizeSchedule } from "@/lib/schedule-optimizer";
 
 const examples = ["AI or programming events after 6 PM tomorrow", "Events this weekend that don't clash with my schedule", "I have two hours free tonight", "Sports events before dinner"];
 
-export function SmartSearch({ student, savedIds }: { student: StudentData | null; savedIds: string[] }) {
+export function SmartSearch({ student, savedIds, events }: { student: StudentData | null; savedIds: string[]; events: EventData[] }) {
   const [text, setText] = useState("");
   const [query, setQuery] = useState<SmartQuery | null>(null);
   const [results, setResults] = useState<SmartResult[] | null>(null);
@@ -23,6 +23,11 @@ export function SmartSearch({ student, savedIds }: { student: StudentData | null
     try {
       const response = await fetch("/api/smart-search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: value }) });
       const data = await response.json();
+      if (response.status === 401 && !student) {
+        const localQuery = parseSmartQuery(value, todayInIsth());
+        setQuery(localQuery); setResults(smartSearch(localQuery, events, null, savedIds).slice(0, 20)); setMethod("Local rules"); setError("");
+        return;
+      }
       if (!response.ok) throw new Error(data.error || "Search is unavailable. Use the filters below.");
       setQuery(data.query); setResults(data.results); setMethod(data.method); setError("");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Search is unavailable. Use the filters below."); setResults(null); }
