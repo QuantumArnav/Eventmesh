@@ -275,7 +275,7 @@ npm audit --audit-level=moderate
 
 For repeatable account checks, create a disposable `prisma/auth-qa.db`, migrate and seed it with `DATABASE_URL=file:./auth-qa.db`, then run `npm run auth:verify-isolation`. The HTTP session check is `npm run auth:verify-http` against a local server on port 3001 using that same disposable database and temporary test-only auth environment values. These scripts refuse to run against the normal database.
 
-At the 29 September account checkpoint, 45 tests, ESLint, TypeScript, a production build, the offline evaluation, database setup, and the two-user account isolation check passed. A local HTTP session check covered guest rejection, student and organizer roles, cross-site mutation rejection, and separate profiles. Four tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; live Google OAuth and optional live OpenAI paths remain unverified without credentials. `npm audit --audit-level=moderate` reported zero vulnerabilities.
+At the 29 September account checkpoint, 45 tests, ESLint, TypeScript, a production build, the offline evaluation, database setup, and the two-user account isolation check passed. A local HTTP session check covered guest rejection, student and organizer roles, cross-site mutation rejection, and separate profiles. Four tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; Google OAuth has been verified locally with a real Google test-user flow. Production OAuth and the optional live OpenAI paths remain unverified. without credentials. `npm audit --audit-level=moderate` reported zero vulnerabilities.
 
 ## Deployment
 
