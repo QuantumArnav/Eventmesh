@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useCampus } from "@/app/providers";
+import { ThemeControl } from "@/components/theme-control";
 
 const studentLinks = [
   { href: "/discover", label: "Discover" },
@@ -73,11 +74,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="main-column">
       {organizer ? <header className="topbar organizer-topbar">
         <div className="topbar-left"><span>EventMesh</span><span className="topbar-separator">/</span><strong>Organizer</strong></div>
-        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/discover" className="topbar-switch">Student mode →</Link><Link href={account ? "/account" : "/login"} className="topbar-switch">{account ? account.name || "Account" : "Sign in"}</Link></div>
+        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><ThemeControl /><Link href="/discover" className="topbar-switch">Student mode →</Link><Link href={account ? "/account" : "/login"} className="topbar-switch">{account ? account.name || "Account" : "Sign in"}</Link></div>
       </header> : <header className="topbar student-topbar">
         <Link href="/" className="student-brand">EventMesh<span>.</span><small>IITH</small></Link>
         <nav aria-label="Student navigation" className="student-nav">{studentLinks.map(({ href, label }) => <Link key={href} href={href} className={isActive(pathname, href) ? "active" : ""}>{label}</Link>)}</nav>
-        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/organizer" className="topbar-switch">Organizer ↗</Link><Link href={account ? "/account" : "/login"} className="topbar-switch">{account ? account.name || "Account" : "Sign in"}</Link></div>
+        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><ThemeControl /><Link href="/organizer" className="topbar-switch">Organizer ↗</Link><Link href={account ? "/account" : "/login"} className="topbar-switch">{account ? account.name || "Account" : "Sign in"}</Link></div>
       </header>}
       <main>{children}</main>
     </div>
