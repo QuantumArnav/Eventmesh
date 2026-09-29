@@ -10,7 +10,7 @@
 
 Campus events are scattered across posters, messages, and club channels. EventMesh gives students one place to discover and plan events, while helping organizers turn announcements into listings and avoid scheduling clashes. Its scores are calculated from visible rules and explained in the interface.
 
-The interface has two connected views: a **campus event guide** for students and a **scheduling workspace** for organizers. Start with [Discover](#student-experience) to browse and save events, then use the [guided demo](#guided-demo) to see the organizer checks. The [design audit](docs/design-audit.md) and [design review](docs/design-review.md) explain the visual system and its verification.
+The interface has two connected views: a **campus event guide** for students and a **scheduling workspace** for organizers. Start with [Discover](#student-experience) to browse events, then use the [guided demo](#guided-demo) to see the organizer checks. Saving and personal planning use [Google sign-in](#accounts-and-access). The [design audit](docs/design-audit.md) and [design review](docs/design-review.md) explain the visual system and its verification.
 
 **Review path:** [Run locally](#run-locally) → [guided demo](#guided-demo) → [evaluation](#evaluation) → [algorithms](#the-intelligence-explained) → [source map](#source-map).
 
@@ -18,7 +18,7 @@ The interface has two connected views: a **campus event guide** for students and
 
 ## See EventMesh
 
-These are screenshots of the running production build with a freshly seeded demo database on 28 September 2026.
+These are screenshots of the pre-account running build with a freshly seeded demo database on 28 September 2026. The current navigation also includes sign-in and account pages.
 
 | Student Discover | Organizer conflict intelligence |
 | --- | --- |
@@ -82,9 +82,9 @@ These are intended benefits. The demo uses synthetic records, so it does not cla
 
 - Search by title, organizer, category, tag, or venue; filter by date and category.
 - **Smart Search** interprets phrases such as “AI or programming after 6 PM tomorrow” into validated category, tag, date, time, duration, and saved-schedule constraints. It only returns events already in the local database. A free-time query can produce a weighted, non-overlapping plan.
-- Explainable 0–100 recommendations using demo interests, category preferences, time, popularity, and organizer affinity.
+- Explainable 0–100 recommendations using each signed-in student's interests, category preferences, time, popularity, and organizer affinity.
 - Event details, related events, registration deadlines, and saved-event clash warnings.
-- Interested, Saved, and Must Attend priorities persisted in SQLite.
+- Interested, Saved, and Must Attend priorities persisted separately for each signed-in student in SQLite.
 - **Build My Plan:** weighted interval scheduling selects the highest-utility set of non-overlapping events and explains skipped events.
 - Export one event or the current schedule/optimized plan as a local `.ics` calendar file.
 
@@ -107,7 +107,7 @@ These are intended benefits. The demo uses synthetic records, so it does not cla
 
 ## Guided demo
 
-Open `/demo` first. Its proposed Lambda workshop is compared with seeded listings by the real duplicate, conflict, slot, and venue engines. The route shows the detected signals without creating an event, followed by **How EventMesh Works**, an eight-stage judge-facing explanation of the methods and their purpose. Then open `/organizer/create`, select **Load demo example**, and run the conflict check yourself. Dates follow the existing seeded Lambda workshop, so the scenario remains connected even when the seed database was created earlier.
+Open `/demo` first. Its proposed Lambda workshop is compared with seeded listings by the real duplicate, conflict, slot, and venue engines. The route shows the detected signals without creating an event, followed by **How EventMesh Works**, an eight-stage judge-facing explanation of the methods and their purpose. No account is needed. Organizers with an authorized account can also open `/organizer/create`, select **Load demo example**, and run the conflict check themselves. Dates follow the existing seeded Lambda workshop, so the scenario remains connected even when the seed database was created earlier.
 
 The [3–4 minute speaking script](docs/demo-script.md) gives a concise sequence for judges.
 
@@ -140,7 +140,7 @@ npm run db:setup
 npm run dev
 ```
 
-Open **http://localhost:3000**. `db:setup` creates SQLite, applies five committed migrations, and inserts 19 labeled demo events, seven illustrative venue profiles, a demo student profile, and a six-event plan. It is safe to rerun: existing events and choices remain, and missing venue links are backfilled. If port 3000 is busy, use the URL printed by Next.js.
+Open **http://localhost:3000**. `db:setup` creates SQLite, applies six committed migrations, and inserts 19 relative demo events, three announcement-based static demo events, seven illustrative venue profiles, a separate demo student profile, and a six-event demo plan. It is safe to rerun: existing events and choices remain, and missing venue links are backfilled. If port 3000 is busy, use the URL printed by Next.js.
 
 The local database is `prisma/dev.db`; it and `.env` are Git-ignored. To use a different SQLite file, change `DATABASE_URL` in `.env` before setup.
 
@@ -149,21 +149,31 @@ The local database is `prisma/dev.db`; it and `.env` are Git-ignored. To use a d
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | Local SQLite path; default `file:./dev.db` |
+| `AUTH_SECRET` | Required for Google sessions; generate a strong random value and keep it private |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID, stored on the server |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret, stored on the server |
+| `AUTH_URL` | Optional public origin for OAuth callbacks behind a reverse proxy, for example `https://your-host.example` |
 | `OPENAI_API_KEY` | Optional key for poster/text extraction and Smart Search interpretation |
 | `OPENAI_VISION_MODEL` | Optional compatible vision model; default `gpt-4.1-mini` |
 | `OPENAI_SEARCH_MODEL` | Optional Smart Search interpretation model; default `gpt-4.1-mini` |
 
 The key stays on the server and is not exposed as `NEXT_PUBLIC_`. Without a key, pasted text and Smart Search use clearly labeled local rules, while poster upload falls back to manual entry. The OpenAI integration is implemented but **has not been live-tested with a key**; its result depends on valid credentials and available quota.
 
-There are no demo credentials. **Discover / My Schedule** are the student view; **Organizer / Create event / Scheduling / Event Mesh** are organizer intelligence views. Production authentication and official campus integrations are outside this hackathon MVP.
+### Accounts and access
+
+The public home page, Discover, event details, organizer intelligence views, and `/demo` work without sign-in. My Schedule, saving, priorities, and personalized recommendations use each authenticated student's own profile. New accounts start as `STUDENT`; the Account page lets users choose interests. The seeded `demo-student` remains separate and is used only to construct deterministic demo data.
+
+Google sign-in uses Auth.js with database sessions and the Prisma adapter. To enable it, create a Google OAuth web client, register `http://localhost:3000/api/auth/callback/google` for local use (and the matching HTTPS callback on your deployed host), then set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` in `.env.local` or deployment secrets. Set `AUTH_URL` to the public origin if a proxy makes callback URLs point at an internal host; use `AUTH_TRUST_HOST=true` only behind a trusted proxy when needed. Restart the server after setting them. **LIVE GOOGLE AUTH: NOT VERIFIED — CREDENTIALS REQUIRED.** Without these values, browsing and `/demo` work, while the login page explains that sign-in is unavailable.
+
+Source inbox, extraction, and event publishing require `ORGANIZER` or `ADMIN`. After a trusted organizer signs in once, a local database operator can grant access with `npm run auth:grant-organizer -- organizer@example.com`. No user can promote their own role in the UI. The project does not assume an IIT Hyderabad email-domain policy; decide and enforce that policy server-side before campus deployment. SQLite sessions and user data require a persistent database volume in deployment.
 
 ## Three-minute judge walkthrough
 
 1. **Start with a calculated scenario.** Open `/demo`. Read the duplicate, venue collision, audience overlap, better slot, and venue match; all come from seeded records through the same production engines.
 2. **Find a reason to attend.** Open `/discover`, try “AI or programming after 6 PM tomorrow” in Smart Search, then open an event. The structured filters are inspectable.
-3. **Resolve a student's clash.** Open `/my-schedule`. The seeded profile tracks six events; click **Build my plan**. Compare selected and skipped events, then change one priority to **Must Attend** and recalculate.
-4. **Turn a message into an event.** Open `/organizer/create`, select **Paste announcement**, click **Use demo announcement**, then **Extract details**. Without a key, the UI says **Local text parser**. Review the confidence cues and edit fields before continuing.
-5. **Show the coordination problem.** Click **Load demo example**, review venue ranking, then run the duplicate and conflict review. The seeded scenario finds a possible duplicate, an LH3 collision, and a programming-audience overlap. The organizer can view the existing event or continue anyway.
+3. **Resolve a scheduling clash without credentials.** Open `/demo` and inspect the proposed Lambda workshop, collision, alternatives, and explanations. A signed-in student can save events in `/discover`, set priorities in `/my-schedule`, and click **Build my plan**.
+4. **Show the coordination problem.** On `/demo`, review venue ranking and the duplicate and conflict signals. The seeded scenario finds a possible duplicate, an LH3 collision, and programming-audience overlap.
+5. **Optional organizer account.** In `/organizer/create`, select **Paste announcement**, click **Use demo announcement**, then **Extract details**. Without an OpenAI key, the UI labels the local text parser. Review and edit fields before publishing. This step requires a configured Google login and an organizer role.
 6. **Find a better slot.** Open `/organizer/scheduling`. Compare ranked slots and inspect a busy heatmap cell.
 7. **See the campus network.** Open `/event-mesh` and select an event, organizer, category, or interest. The panel explains the connections and links back to event details.
 
@@ -239,7 +249,7 @@ Run `npm run evaluate`. The [measured synthetic evaluation](docs/evaluation.md) 
 
 ## Database schema
 
-`Event` stores validated event fields, text venue, optional `venueId`, and an optional unique submission key for newly created events. `Venue` holds illustrative capacity, area, type, and facility flags. `EventSource` stores a supplied text or poster locally with extraction output and review status; a publication links back to the created event. `StudentProfile` stores demo interests; `SavedEvent` connects the demo student to listed events with Interested, Saved, or Must Attend priority. Existing event rows remain valid after venue migration.
+`Event` stores validated event fields, text venue, optional `venueId`, and an optional unique submission key for newly created events. `Venue` holds illustrative capacity, area, type, and facility flags. `EventSource` stores a supplied text or poster locally with extraction output and review status; a publication links back to the created event. Auth.js `User`, `Account`, `Session`, and `VerificationToken` tables support Google login. Each real `StudentProfile` has a unique `userId`; `SavedEvent` references that profile and stores Interested, Saved, or Must Attend priority. The original seeded profile has no `userId` and stays separate. The account migration preserves existing events, venues, sources, demo profile, and saved choices.
 
 ```text
 app/                Pages and API route handlers
@@ -264,7 +274,9 @@ npm run build
 npm audit --audit-level=moderate
 ```
 
-At the 28 September release checkpoint, 43 tests, ESLint, TypeScript, a clean production build, and the offline evaluation passed. Four tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; the optional live OpenAI paths remain unverified without credentials. The release build also passed `npm audit --audit-level=moderate` with zero reported vulnerabilities.
+For repeatable account checks, create a disposable `prisma/auth-qa.db`, migrate and seed it with `DATABASE_URL=file:./auth-qa.db`, then run `npm run auth:verify-isolation`. The HTTP session check is `npm run auth:verify-http` against a local server on port 3001 using that same disposable database and temporary test-only auth environment values. These scripts refuse to run against the normal database.
+
+At the 29 September account checkpoint, 45 tests, ESLint, TypeScript, a production build, the offline evaluation, database setup, and the two-user account isolation check passed. A local HTTP session check covered guest rejection, student and organizer roles, cross-site mutation rejection, and separate profiles. Four tests exercise mocked AI provider success and failure paths. Re-run the commands above in your environment; live Google OAuth and optional live OpenAI paths remain unverified without credentials. `npm audit --audit-level=moderate` reported zero vulnerabilities.
 
 ## Deployment
 
@@ -283,6 +295,7 @@ See the [final quality checks](docs/quality-checks.md) for runtime, accessibilit
 | Optional AI extraction and its validated local fallback | [`lib/ai/event-extractor.ts`](lib/ai/event-extractor.ts), [`app/api/extract/route.ts`](app/api/extract/route.ts) |
 | Venue model, scoring, and UI | [`prisma/schema.prisma`](prisma/schema.prisma), [`lib/venue-matcher.ts`](lib/venue-matcher.ts), [`components/venue-advisor.tsx`](components/venue-advisor.tsx) |
 | Smart Search and guided demo | [`lib/smart-search.ts`](lib/smart-search.ts), [`components/smart-search.tsx`](components/smart-search.tsx), [`app/demo/page.tsx`](app/demo/page.tsx) |
+| Google sessions and per-user state | [`auth.ts`](auth.ts), [`lib/current-user.ts`](lib/current-user.ts), [`app/api/profile/route.ts`](app/api/profile/route.ts), [`prisma/schema.prisma`](prisma/schema.prisma) |
 | Reproducible measurements | [`evaluation/run.ts`](evaluation/run.ts), [`docs/evaluation.md`](docs/evaluation.md) |
 | Persistent source review | [`app/organizer/inbox/page.tsx`](app/organizer/inbox/page.tsx), [`app/api/inbox/route.ts`](app/api/inbox/route.ts), [`lib/inbox-store.ts`](lib/inbox-store.ts) |
 | Event graph and calendar export | [`lib/event-graph.ts`](lib/event-graph.ts), [`lib/ics.ts`](lib/ics.ts) |
@@ -292,7 +305,7 @@ The screenshots above show the current UI; the diagram shows the data flow for a
 
 ## Limits and next steps
 
-The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided by a user. Poster bytes and raw announcement text are stored in SQLite when staged in the inbox; there is no retention policy or production access control, so a public demo must use disposable content and access protection. It does not reserve official venues. Organizer and student views share one clearly labeled demo profile; there is no production authentication. A campus deployment would need identity and permissions, verified organizers, official venue feeds, and consent-aware data handling. Optional ideas from the initial brief such as a separate calendar page and light mode were not implemented; the working scheduling heatmap and timeline cover the core use cases.
+The app does not ingest private WhatsApp messages, emails, or club pages automatically. It processes only a poster or announcement intentionally provided by an organizer. Poster bytes and raw announcement text are stored in SQLite when staged in the role-protected inbox; there is no retention policy, so use disposable content for demos. It does not reserve official venues. Google OAuth has been implemented but not tested against a live Google client. A campus deployment still needs a reviewed email-domain policy, verified organizer approval, official venue feeds, consent-aware data handling, and retention rules. Optional ideas from the initial brief such as a separate calendar page and light mode were not implemented; the working scheduling heatmap and timeline cover the core use cases.
 
 ## Data disclaimer
 
@@ -300,7 +313,7 @@ The app does not ingest private WhatsApp messages, emails, or club pages automat
 
 ## Future scope
 
-With campus approval: verified organizer identity, official room inventory and bookings, consented event feeds, multi-user accounts, and evaluation on independently labeled real announcements. These are proposals, not current features. See [future integration boundaries](docs/future-integrations.md) for the adapter shape and required review steps.
+With campus approval: verified organizer identity, official room inventory and bookings, consented event feeds, an explicit account-domain policy, and evaluation on independently labeled real announcements. These are proposals, not current features. See [future integration boundaries](docs/future-integrations.md) for the adapter shape and required review steps.
 
 ## Team
 

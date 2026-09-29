@@ -55,6 +55,13 @@ describe("personalized discovery", () => {
     expect(strong.score).toBeGreaterThan(unrelated.score);
     expect(strong.reasons.join(" ")).toContain("AI");
   });
+  it("turns a new account's AI / ML interest into relevant event matches", () => {
+    const newcomer = { ...student, interests: ["AI / ML"], categoryPreferences: [], organizerAffinity: [] };
+    const relevant = recommend(event(), newcomer);
+    const unrelated = recommend(event({ category: "Cultural", tags: ["Music"], organizer: "Music Club" }), newcomer);
+    expect(relevant.score).toBeGreaterThan(unrelated.score);
+    expect(relevant.reasons.join(" ")).toContain("AI");
+  });
   it("always keeps relevance within 0–100", () => {
     expect(recommend(event({ popularity: 10000 }), student).score).toBeLessThanOrEqual(100);
     expect(recommend(event({ popularity: 0, tags: [] }), student).score).toBeGreaterThanOrEqual(0);

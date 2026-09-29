@@ -74,7 +74,7 @@ function ReviewHint({ assessment }: { assessment?: FieldAssessment }) {
   return <span className={`extraction-hint ${assessment.label === "High confidence" ? "" : "needs-review"}`}>{assessment.label}{assessment.warning && <small>{assessment.warning}</small>}</span>;
 }
 
-export default function CreateEvent() {
+function CreateEventEditor() {
   const router = useRouter();
   const { refresh, events } = useCampus();
   const [mode, setMode] = useState<"manual" | "poster" | "announcement">("manual");
@@ -261,4 +261,11 @@ export default function CreateEvent() {
       </section>}
     </div><aside className="panel side-note"><IntelligencePipeline hasInput={!!(sourceId || draft.title || draft.description)} extracted={!!extractionFields} extractionApplicable={!!sourceId || mode !== "manual"} valid={eventInputSchema.safeParse(asInput(draft)).success} analyzed={!!analysis && analysisKey === JSON.stringify(asInput(draft))} hasDuplicate={!!analysis?.duplicates.length} hasConflict={!!analysis?.conflicts.some((item) => item.score >= 60)} venueChosen={!!draft.venue} /><div className="readiness-card"><div className="section-kicker">EVENT READINESS</div><div className="readiness-score">{readiness.score}<small>/100</small></div><div className="readiness-track"><span style={{ width: `${readiness.score}%` }} /></div><p>A transparent completeness score. It never blocks publishing.</p><IntelligenceExplanation title="Why this readiness score?" reasons={readiness.items.filter((item) => item.earned > 0).map((item) => `${item.label}: +${item.points}`)} warnings={readiness.items.filter((item) => !item.earned).map((item) => `${item.label}: ${item.advice}`)} /></div><div className="section-kicker">HOW IT WORKS</div><h2>From idea to campus.</h2><p className="form-intro">A short, transparent workflow that keeps organizers in control.</p><div className="step-list"><div className="step-item"><span className="step-number">01</span><div><strong>Enter or extract details</strong><p>Upload a poster, paste an announcement, or fill the form yourself.</p></div></div><div className="step-item"><span className="step-number">02</span><div><strong>Review every field</strong><p>Extraction never creates an event automatically.</p></div></div><div className="step-item"><span className="step-number">03</span><div><strong>Check the campus</strong><p>Review duplicates, venue collisions, audience overlap and better slots.</p></div></div><div className="step-item"><span className="step-number">04</span><div><strong>Publish with confidence</strong><p>Your event appears in the discovery feed immediately.</p></div></div></div><div className="tip-box">Demo tip: use “Load demo example” to show both a venue collision at LH3 and audience overlap with the Programming Club contest.</div></aside></div>
   </div>;
+}
+
+export default function CreateEvent() {
+  const { account, loading } = useCampus();
+  if (loading) return <div className="page-wrap"><div className="notice">Loading organizer access…</div></div>;
+  if (!account || !["ORGANIZER", "ADMIN"].includes(account.role)) return <div className="page-wrap"><section className="panel auth-card"><span className="mini-label">ORGANIZER WORKSPACE</span><h1>Organizer access is required.</h1><p>Explore the guided demo without signing in. Publishing and poster intake require an organizer account.</p><Link href={account ? "/account" : "/login?callbackUrl=%2Forganizer%2Fcreate"} className="button button-primary">{account ? "View account" : "Sign in"} →</Link> <Link href="/demo" className="button button-secondary">Guided demo</Link></section></div>;
+  return <CreateEventEditor />;
 }

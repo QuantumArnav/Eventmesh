@@ -13,12 +13,14 @@ import { downloadIcs } from "@/lib/ics";
 const labels: Record<Preference, string> = { INTERESTED: "Interested", SAVED: "Saved", MUST_ATTEND: "Must Attend" };
 
 export default function MySchedule() {
-  const { events, student, savedEventIds, preferences, toggleSaved, setPreference, loading, error } = useCampus();
+  const { events, account, student, savedEventIds, preferences, toggleSaved, setPreference, loading, error } = useCampus();
   const [showPlan, setShowPlan] = useState(false);
   const saved = events.filter((event) => savedEventIds.includes(event.id)).sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
   const days = [...new Set(saved.map((event) => event.date))];
   const overlapPairs = saved.reduce((count, event, index) => count + saved.slice(index + 1).filter((other) => overlapMinutes(event, other) > 0).length, 0);
   const plan = student ? optimizeSchedule(saved.map((event) => ({ event, preference: preferences[event.id] ?? "SAVED" })), student) : null;
+
+  if (!loading && !account) return <div className="page-wrap"><EmptyState title="Your schedule starts with an account." description="Sign in to save events and build a personal plan. The guided demo is available without an account." action={<><Link href="/login?callbackUrl=%2Fmy-schedule" className="button button-primary">Sign in →</Link> <Link href="/demo" className="button button-secondary">View guided demo</Link></>} /></div>;
 
   return <div className="page-wrap"><div className="page-header"><div><div className="section-kicker"><CalendarDays size={15} /> YOUR CAMPUS, YOUR TIME</div><h1 className="page-title">My schedule.</h1><p className="page-subtitle">Your saved events, arranged by day. Mark priorities to find a plan without overlaps.</p></div><Link href="/discover" className="button button-secondary">Find more events <ArrowRight size={16} /></Link></div>
     {error && <div className="notice error" role="alert">{error}</div>}

@@ -6,10 +6,10 @@ EventMesh is a single Next.js container with SQLite. SQLite must live on a persi
 
 1. Create a Railway project from `https://github.com/QuantumArnav/Eventmesh` and let Railway use the root `Dockerfile`.
 2. Add a **volume** mounted at `/app/prisma/data`. Do this **before** opening the service to viewers. Mount the data directory only; mounting `/app/prisma` would hide the schema and migrations.
-3. Set `DATABASE_URL=file:./data/dev.db`. Leave `OPENAI_API_KEY` unset for the fully functional local text and Smart Search fallback. Add it only through Railway variables if you have a working key; never commit it.
+3. Set `DATABASE_URL=file:./data/dev.db`. For personal accounts, also set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` as private variables; register the deployed HTTPS `/api/auth/callback/google` redirect in Google Cloud. If the proxy reports an internal callback host, set `AUTH_URL` to the public HTTPS origin. Behind a trusted reverse proxy, set `AUTH_TRUST_HOST=true` if Auth.js requires it. Leave `OPENAI_API_KEY` unset for local text and Smart Search fallback. Never commit any secret.
 4. Configure `/api/health` as the health-check path. Generate a public domain after the deployment reaches healthy status.
-5. Inspect startup logs for the five migrations and seed completion. Open the generated domain and verify `/`, `/discover`, one event detail, Smart Search, `/organizer`, `/organizer/inbox`, `/organizer/create`, `/organizer/scheduling`, `/event-mesh`, and `/demo`.
-6. Create a test listing, refresh Discover, then restart/redeploy the service and verify the listing persists. Open its QR code from another device to verify that it points at the public domain.
+5. Inspect startup logs for the six migrations and seed completion. Open the generated domain and verify `/`, `/discover`, one event detail, Smart Search, `/organizer`, `/organizer/scheduling`, `/event-mesh`, and `/demo` without signing in. `/organizer/inbox` and `/organizer/create` should require an organizer account.
+6. Once Google OAuth has been configured and tested, sign in with a test account. Grant that account organizer access through a trusted database operator (`npm run auth:grant-organizer -- account@example.com`), create a test listing, refresh Discover, then restart/redeploy the service and verify the listing persists. Open its QR code from another device to verify that it points at the public domain.
 7. Back up the SQLite volume before later migrations. Keep one running instance: concurrent replicas writing the same SQLite file are outside this prototype's design.
 
 The seed is idempotent and does not intentionally reset existing events or saved preferences. The database file in the image is only for build-time validation; the mounted volume supplies the runtime database. [Railway Dockerfile builds](https://docs.railway.com/builds/dockerfiles) and [Railway volumes](https://docs.railway.com/volumes/reference) are the platform references.
@@ -20,7 +20,7 @@ Render's ordinary filesystem is ephemeral. Use a paid service with a persistent 
 
 ## Security boundary for a public demo
 
-The current hackathon prototype has one shared demo student and no authentication. Anyone who can reach the app can stage sources, read staged content, change demo preferences, and create listings. Protect the public URL with a trusted access layer or share it only with reviewers using disposable demo data. Do not submit private posters, personal messages, or real booking information. This app has no production retention or moderation system.
+The public guide and deterministic `/demo` need no account. Personal schedules use database-backed Auth.js sessions, and organizer intake and publishing check roles server-side. The Google login flow has not been tested with live credentials; verify it before claiming a production login. The seeded demo profile stays separate from authenticated profiles. Use disposable posters and announcements because inbox content is stored in SQLite without a retention or moderation system. No IIT Hyderabad email-domain restriction is assumed; define and enforce that policy if campus deployment requires it.
 
 ## Current deployment status
 

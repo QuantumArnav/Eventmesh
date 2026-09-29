@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSource, SOURCE_STATUSES, updateSource, type SourceStatus } from "@/lib/inbox-store";
 import { limitedJson, RequestTooLargeError } from "@/lib/request-limits";
+import { rejectCrossOrigin, requireOrganizer } from "@/lib/current-user";
 
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Context) {
+  const { error } = await requireOrganizer();
+  if (error) return error;
   try {
     const source = await getSource((await params).id);
     return source ? NextResponse.json(source) : NextResponse.json({ error: "Source not found." }, { status: 404 });
@@ -13,6 +16,10 @@ export async function GET(_request: Request, { params }: Context) {
 }
 
 export async function PATCH(request: Request, { params }: Context) {
+  const { error } = await requireOrganizer();
+  if (error) return error;
+  const crossOrigin = rejectCrossOrigin(request);
+  if (crossOrigin) return crossOrigin;
   try {
     const { id } = await params;
     const body = await limitedJson(request, 1024) as { status?: unknown } | null;

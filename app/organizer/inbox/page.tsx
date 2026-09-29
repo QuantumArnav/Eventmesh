@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, FileImage, Inbox } from "lucide-react";
+import { useCampus } from "@/app/providers";
 
 type InboxRow = { id: string; sourceType: "TEXT" | "POSTER"; label: string; status: string; publishedEventId: string | null; createdAt: string };
 
-export default function OrganizerInbox() {
+function OrganizerInboxEditor() {
   const [rows, setRows] = useState<InboxRow[]>([]);
   const [text, setText] = useState("");
   const [poster, setPoster] = useState<File | null>(null);
@@ -47,4 +48,11 @@ export default function OrganizerInbox() {
       {rows.length ? rows.map((row) => <div className="inbox-row" key={row.id}><div><strong>{row.label}</strong><small>{row.sourceType === "POSTER" ? "Poster" : "Text announcement"} · {new Date(row.createdAt).toLocaleString("en-IN")}</small></div><span className="inbox-status">{row.status.replaceAll("_", " ")}</span>{row.status === "PUBLISHED" && row.publishedEventId ? <Link href={`/events/${row.publishedEventId}`}>View event →</Link> : <Link href={`/organizer/create?source=${encodeURIComponent(row.id)}`}>Review →</Link>}</div>) : <p>No staged sources yet. Paste an announcement or upload a poster to start.</p>}
     </section>
   </div>;
+}
+
+export default function OrganizerInbox() {
+  const { account, loading } = useCampus();
+  if (loading) return <div className="page-wrap"><div className="notice">Loading organizer access…</div></div>;
+  if (!account || !["ORGANIZER", "ADMIN"].includes(account.role)) return <div className="page-wrap"><section className="panel auth-card"><span className="mini-label">ORGANIZER WORKSPACE</span><h1>Organizer access is required.</h1><p>The source inbox is available to organizer accounts. You can explore the guided demo without signing in.</p><Link href={account ? "/account" : "/login?callbackUrl=%2Forganizer%2Finbox"} className="button button-primary">{account ? "View account" : "Sign in"} →</Link> <Link href="/demo" className="button button-secondary">Guided demo</Link></section></div>;
+  return <OrganizerInboxEditor />;
 }

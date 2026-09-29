@@ -6,6 +6,7 @@ import { serverLog } from "@/lib/server-log";
 import { Prisma } from "@prisma/client";
 import { getSource } from "@/lib/inbox-store";
 import { limitedJson, RequestTooLargeError } from "@/lib/request-limits";
+import { rejectCrossOrigin, requireOrganizer } from "@/lib/current-user";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const { error } = await requireOrganizer();
+  if (error) return error;
+  const crossOrigin = rejectCrossOrigin(request);
+  if (crossOrigin) return crossOrigin;
   try {
     const body = await limitedJson(request, 16 * 1024) as { event?: unknown; sourceId?: unknown; confirmConflicts?: unknown } | null;
     if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid event request." }, { status: 400 });

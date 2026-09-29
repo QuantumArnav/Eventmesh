@@ -5,7 +5,7 @@ const stages = [
   { name: "Duplicate detection", method: "Weighted title, organizer, date, time, venue, and tag similarity", purpose: "Surface likely copies of listed events.", value: "Avoids splitting attention across duplicate listings." },
   { name: "Conflict analysis", method: "Interval overlap, tag Jaccard similarity, and weighted scores", purpose: "Separate venue collisions from audience overlap.", value: "Shows the reasons behind scheduling risk." },
   { name: "Venue ranking", method: "Capacity, facilities, event fit, and listed-calendar availability", purpose: "Compare illustrative venue profiles.", value: "Helps organizers choose a suitable room; it is not a booking." },
-  { name: "Recommendation", method: "Interest, category, time, demo popularity, and organizer affinity", purpose: "Rank events for the signed-in demo profile.", value: "Makes discovery more relevant and explainable." },
+  { name: "Recommendation", method: "Interest, category, time, demo popularity, and organizer affinity", purpose: "Rank events for each signed-in student's profile.", value: "Makes discovery more relevant and explainable." },
   { name: "Schedule optimization", method: "Candidate time search and weighted interval scheduling", purpose: "Suggest lower-conflict slots and compatible student plans.", value: "Helps both organizers and students use their time well." },
 ];
 

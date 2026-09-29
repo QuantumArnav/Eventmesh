@@ -4,9 +4,10 @@ import type { EventData, StudentData } from "./types";
 export type Recommendation = { score: number; reasons: string[] };
 
 export function recommend(event: EventData, student: StudentData): Recommendation {
-  const interests = student.interests.map((value) => value.toLowerCase());
+  const interests = student.interests.flatMap((value) => value === "AI / ML" ? ["ai", "machine learning"] : [value.toLowerCase()]);
   const shared = event.tags.filter((tag) => interests.includes(tag.toLowerCase()));
-  const preferredCategory = student.categoryPreferences.some((value) => value.toLowerCase() === event.category.toLowerCase());
+  const inferredCategories = student.interests.flatMap((value) => value === "Sports" ? ["Sports"] : value === "Music" || value === "Dance" || value === "Photography" || value === "Literature" ? ["Cultural"] : value === "Programming" || value === "AI / ML" ? ["Technical", "Workshop"] : []);
+  const preferredCategory = [...student.categoryPreferences, ...inferredCategories].some((value) => value.toLowerCase() === event.category.toLowerCase());
   const organizerAffinity = student.organizerAffinity.some((value) => value.toLowerCase() === event.organizer.toLowerCase());
   const start = minutes(event.startTime);
   const suitableTime = start >= 16 * 60 && start <= 21 * 60;

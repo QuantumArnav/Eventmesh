@@ -498,6 +498,15 @@ body { background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-
   .organizer-surface .mobile-nav a { flex: 0 0 82px; min-width: 82px; padding: 0 5px; white-space: nowrap; }
   .organizer-surface .mobile-nav a.active { color: var(--accent); border-top: 2px solid var(--accent); }
 }
+
+.app-shell .auth-page { max-width: 720px; margin: 0 auto; }
+.app-shell .auth-card { padding: clamp(24px, 4vw, 42px); margin-bottom: 18px; }
+.auth-card h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1.08; letter-spacing: -.05em; margin: 16px 0; }
+.auth-card h2 { margin: 12px 0; font-size: 25px; }
+.auth-card p { color: var(--muted-ink); line-height: 1.6; max-width: 52ch; }
+.auth-card form { margin: 25px 0 15px; }
+.auth-links { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 22px; color: var(--accent); font-size: 13px; }
+.interest-options { display: flex; gap: 9px; flex-wrap: wrap; margin: 20px 0 24px; }
 @media (max-width: 520px) {
   .organizer-surface .venue-match-facts { grid-template-columns: 1fr 1fr; gap: 8px; }
   .organizer-surface .campus-intelligence-stats .stat-card { min-width: 0; }

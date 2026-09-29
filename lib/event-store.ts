@@ -51,18 +51,18 @@ export async function createEvent(input: EventInput, sourceId?: string): Promise
   return toEvent(row);
 }
 
-export async function getStudent(): Promise<StudentData> {
-  const student = await prisma.studentProfile.findUniqueOrThrow({ where: { id: "demo-student" } });
+export async function getStudent(studentId: string): Promise<StudentData> {
+  const student = await prisma.studentProfile.findUniqueOrThrow({ where: { id: studentId } });
   return { id: student.id, name: student.name, interests: JSON.parse(student.interestsJson),
     categoryPreferences: JSON.parse(student.categoryPreferencesJson), organizerAffinity: JSON.parse(student.organizerAffinityJson) };
 }
 
-export async function getSavedEventIds(): Promise<string[]> {
-  const rows = await prisma.savedEvent.findMany({ where: { studentId: "demo-student" } });
+export async function getSavedEventIds(studentId: string): Promise<string[]> {
+  const rows = await prisma.savedEvent.findMany({ where: { studentId } });
   return rows.map((row) => row.eventId);
 }
 
-export async function getEventPreferences(): Promise<Record<string, Preference>> {
-  const rows = await prisma.savedEvent.findMany({ where: { studentId: "demo-student" }, select: { eventId: true, preference: true } });
+export async function getEventPreferences(studentId: string): Promise<Record<string, Preference>> {
+  const rows = await prisma.savedEvent.findMany({ where: { studentId }, select: { eventId: true, preference: true } });
   return Object.fromEntries(rows.map((row) => [row.eventId, row.preference as Preference]));
 }

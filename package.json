@@ -11,6 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "evaluate": "tsx evaluation/run.ts",
+    "auth:grant-organizer": "tsx scripts/grant-organizer.ts",
+    "auth:verify-isolation": "tsx scripts/verify-account-isolation.ts",
+    "auth:verify-http": "tsx scripts/verify-auth-http.ts",
     "db:migrate": "node scripts/ensure-db.mjs && prisma migrate dev",
     "db:setup": "node scripts/ensure-db.mjs && prisma generate && prisma migrate deploy && npm run db:seed",
     "db:deploy": "node scripts/ensure-db.mjs && prisma migrate deploy && npm run db:seed",
@@ -19,10 +22,12 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.3",
     "@prisma/client": "6.19.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.468.0",
     "next": "16.3.6",
+    "next-auth": "^5.0.0-beta.32",
     "openai": "^7.23.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",

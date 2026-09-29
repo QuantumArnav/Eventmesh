@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useCampus } from "@/app/providers";
 
 const studentLinks = [
   { href: "/discover", label: "Discover" },
@@ -33,6 +34,7 @@ function isActive(pathname: string, href: string) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { account } = useCampus();
   const pathname = usePathname();
   const [hash, setHash] = useState("");
   const mobileNavRef = useRef<HTMLElement>(null);
@@ -71,11 +73,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="main-column">
       {organizer ? <header className="topbar organizer-topbar">
         <div className="topbar-left"><span>EventMesh</span><span className="topbar-separator">/</span><strong>Organizer</strong></div>
-        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/discover" className="topbar-switch">Student mode →</Link></div>
+        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/discover" className="topbar-switch">Student mode →</Link><Link href={account ? "/account" : "/login"} className="topbar-switch">{account ? account.name || "Account" : "Sign in"}</Link></div>
       </header> : <header className="topbar student-topbar">
         <Link href="/" className="student-brand">EventMesh<span>.</span><small>IITH</small></Link>
         <nav aria-label="Student navigation" className="student-nav">{studentLinks.map(({ href, label }) => <Link key={href} href={href} className={isActive(pathname, href) ? "active" : ""}>{label}</Link>)}</nav>
-        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/organizer" className="topbar-switch">Organizer ↗</Link></div>
+        <div className="topbar-right"><span className="demo-pill">DEMO DATA</span><Link href="/organizer" className="topbar-switch">Organizer ↗</Link><Link href={account ? "/account" : "/login"} className="topbar-switch">{account ? account.name || "Account" : "Sign in"}</Link></div>
       </header>}
       <main>{children}</main>
     </div>
@@ -85,6 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return <Link key={href} href={href} onClick={organizer && href.startsWith("/organizer#") ? () => setHash("#upcoming-events") : organizer && href === "/organizer" ? () => setHash("") : undefined} aria-current={active ? "page" : undefined} className={active ? "active" : ""}>{label}</Link>;
       })}
       {organizer && <Link href="/discover">Student</Link>}
+      <Link href={account ? "/account" : "/login"}>{account ? "Account" : "Sign in"}</Link>
     </nav>
   </div>;
 }

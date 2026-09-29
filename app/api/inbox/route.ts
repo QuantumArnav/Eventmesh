@@ -4,15 +4,22 @@ import { extractEvent, ExtractionUnavailableError } from "@/lib/ai/event-extract
 import { serverLog } from "@/lib/server-log";
 import { validPosterBytes } from "@/lib/image-validation";
 import { limitedFormData, limitedJson, RequestTooLargeError } from "@/lib/request-limits";
+import { rejectCrossOrigin, requireOrganizer } from "@/lib/current-user";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const { error } = await requireOrganizer();
+  if (error) return error;
   try { return NextResponse.json(await listSources()); }
   catch { return NextResponse.json({ error: "Could not load source inbox." }, { status: 500 }); }
 }
 
 export async function POST(request: Request) {
+  const { error } = await requireOrganizer();
+  if (error) return error;
+  const crossOrigin = rejectCrossOrigin(request);
+  if (crossOrigin) return crossOrigin;
   try {
     if (request.headers.get("content-type")?.includes("application/json")) {
       const body = await limitedJson(request) as { text?: unknown };

@@ -12,7 +12,7 @@ import { recommend } from "@/lib/recommendation-engine";
 const filters = ["All", "Today", "Tomorrow", "This Week", "Technical", "Cultural", "Sports", "Workshop", "Talk"];
 
 export default function Discover() {
-  const { events, student, savedEventIds, toggleSaved, loading, error, refresh } = useCampus();
+  const { events, account, student, savedEventIds, toggleSaved, loading, error, refresh } = useCampus();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const today = todayInIsth();
@@ -35,6 +35,7 @@ export default function Discover() {
 
   return <div className="page-wrap discover-page">
     <div className="discover-header"><div><span className="mini-label">THE CAMPUS EVENT GUIDE / {formatDate(today, { weekday: "long", month: "long" }).toUpperCase()}</span><h1>What’s happening<br />at IITH?</h1><p>Find an event for tonight, the weekend, or the hour you have free.</p></div><Link href="/my-schedule" className="text-link">My schedule →</Link></div>
+    {!loading && account && student?.interests.length === 0 && <div className="notice">Make Discover yours: <Link href="/account">choose your interests →</Link></div>}
     {error && <div className="notice error" role="alert">{error} <button type="button" className="button button-small button-secondary" onClick={() => void refresh()}>Retry</button></div>}
     {!loading && !error && <SmartSearch student={student} savedIds={savedEventIds} />}
     <section className="discover-browser" aria-label="Browse events">

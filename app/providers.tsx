@@ -1,11 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { EventData, StudentData } from "@/lib/types";
 import type { Preference } from "@/lib/schedule-optimizer";
 
 type CampusContext = {
   events: EventData[];
+  account: { id: string; name: string | null; email: string | null; image: string | null; role: string } | null;
   student: StudentData | null;
   savedEventIds: string[];
   preferences: Record<string, Preference>;
@@ -25,7 +27,9 @@ async function jsonOrThrow(response: Response) {
 }
 
 export function CampusProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
+  const [account, setAccount] = useState<CampusContext["account"]>(null);
   const [student, setStudent] = useState<StudentData | null>(null);
   const [savedEventIds, setSavedEventIds] = useState<string[]>([]);
   const [preferences, setPreferences] = useState<Record<string, Preference>>({});
@@ -35,14 +39,20 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [eventData, profileData] = await Promise.all([
+      const [eventData, profileResponse] = await Promise.all([
         fetch("/api/events", { cache: "no-store" }).then(jsonOrThrow),
-        fetch("/api/profile", { cache: "no-store" }).then(jsonOrThrow),
+        fetch("/api/profile", { cache: "no-store" }),
       ]);
       setEvents(eventData);
-      setStudent(profileData.student);
-      setSavedEventIds(profileData.savedEventIds);
-      setPreferences(profileData.preferences ?? {});
+      if (profileResponse.status === 401) {
+        setAccount(null); setStudent(null); setSavedEventIds([]); setPreferences({});
+      } else {
+        const profileData = await jsonOrThrow(profileResponse);
+        setAccount(profileData.account);
+        setStudent(profileData.student);
+        setSavedEventIds(profileData.savedEventIds);
+        setPreferences(profileData.preferences ?? {});
+      }
       setError(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not load campus data"); }
     finally { setLoading(false); }
@@ -51,6 +61,7 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { const timer = setTimeout(() => void refresh(), 0); return () => clearTimeout(timer); }, [refresh]);
 
   const toggleSaved = async (id: string) => {
+    if (!account) { router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`); return; }
     const wasSaved = savedEventIds.includes(id);
     setSavedEventIds((current) => wasSaved ? current.filter((value) => value !== id) : [...current, id]);
     try {
@@ -70,6 +81,7 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setPreference = async (id: string, preference: Preference) => {
+    if (!account) { router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`); return; }
     const old = preferences;
     setPreferences((current) => ({ ...current, [id]: preference }));
     try {
@@ -81,7 +93,7 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
     } catch (cause) { setPreferences(old); setError(cause instanceof Error ? cause.message : "Could not update event priority"); }
   };
 
-  return <Context.Provider value={{ events, student, savedEventIds, preferences, loading, error, refresh, toggleSaved, setPreference }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ events, account, student, savedEventIds, preferences, loading, error, refresh, toggleSaved, setPreference }}>{children}</Context.Provider>;
 }
 
 export function useCampus() {
